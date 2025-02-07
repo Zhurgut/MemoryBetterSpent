@@ -1,0 +1,23 @@
+
+1. DETERMINE MATRIX TYPE
+implement matrix types (common interface)
+
+set up data set generation and optimization
+
+investigate initialization scales
+
+SOTA pruning technique
+
+plotting
+
+2. KERNELS FOR MODERN GPUS
+super computer account
+
+set everything up
+
+3. TRAIN LLM
+train llm with dense weights
+with particular matrix weights
+details...
+
+

@@ -1,0 +1,66 @@
+
+
+every day:
+    generate and download new keypair, put in ~/.ssh/ folder
+    https://sshservice.cscs.ch/
+
+
+eval $(ssh-agent)
+chmod 600 ~/.ssh/cscs-key
+ssh-add ~/.ssh/cscs-key
+
+
+
+rsync src dest, e.g.
+rsync ./code/Kernels/info.cu dcamenis@ault:/users/dcamenis
+
+
+
+ssh ault
+sinfo to see which nodes are free
+salloc -p amdrtx -w ault4[X] -t 20:00
+srun --pty bash -l
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+make sure ssh is running (Start-Service ssh-agent), in powershell
+Get-Service ssh-agent
+
+
+connect to cscs
+ssh -A dcamenis@ela.cscs.ch
+ssh ault
+salloc --partition=amdrtx -w ault4[X]
+srun --pty bash -l
+
+
+
+
+ssh -m hmac-sha2-256-etm@openssh.com clariden
+ssh daint.alps.cscs.ch (password?)
+
+store data in $HOME, 50GB, 500k files max
+https://app.globus.org/file-manager
+
+copy folder/file(s) to $SCRATCH
+sbatch move.sh <source folder/file, e.g. $HOME/test.cu>
+
+get an interactive session 
+salloc -C [mc/gpu] -t [time, max 30 min] -A g34 -p debug
+srun --pty bash -l
