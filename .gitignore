@@ -1,15 +1,8 @@
 /.venv
 /.vscode
-/TODO.txt
-/T_monarch.svg
-/T_unstr.svg
-/how-to-cscs.txt
-/losses_vs_norms_10_runs_per_density:_(nr_params).svg
 /msc.code-workspace
 /nm_vs_loss_off1.svg
-/ns_vs_ls (underparameterized_setting).svg
-/thresh.svg
-/unstructured-data500-32-5L.svg
+*.svg
 *.pt
 __pycache__/
 cifar-10-batches-py/

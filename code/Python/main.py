@@ -6,6 +6,8 @@ from layers import *
 import argparse
 import json
 
+import time
+
 
 def nr_parameters(model):
     return sum(p.numel() for p in model.parameters())
@@ -108,7 +110,9 @@ def main():
     else:
         model = create_model(args.depth, args.width, layer_fn)      
 
+    start = time.time()
     training_losses, training_accuracies, test_losses, test_accuracies = train(model, args.epochs, args.learning_rate, args.batch_size)
+    end = time.time()
     
     output = {
         "layer": str(layer_fn.__name__),
@@ -118,6 +122,7 @@ def main():
         "lr": args.learning_rate,
         "batchsize": args.batch_size,
         "nr_epochs": len(training_losses),
+        "time": end-start,
         "params": params,
         "train_losses": training_losses,
         "test_losses": test_losses,
