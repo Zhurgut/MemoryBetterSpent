@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from train import train
-from layers import *
+import layers
 
 import argparse
 import json
@@ -12,6 +12,21 @@ import time
 def nr_parameters(model):
     return sum(p.numel() for p in model.parameters())
 
+
+
+
+def VisionTransformer(embed_dim, patch_size, nr_transformer_blocks, nr_heads, nr_classes, layer_fn, *args):
+    nr_patches = int(32*32 / (patch_size * patch_size))
+    
+    return nn.Sequential(
+        layers.Patchify(patch_size),
+        layers.Embedding(embed_dim),
+        layers.PosEncoding(embed_dim, nr_patches),
+        *(layers.TransformerBlock(embed_dim, nr_heads, layer_fn, *args) for _ in range(nr_transformer_blocks)),
+        layers.ClassificationHead(nr_classes)
+    )
+    
+    
 
 def create_model(nr_blocks, width, layer_fn, *args):
     # def Block():
@@ -52,20 +67,26 @@ def create_model(nr_blocks, width, layer_fn, *args):
         *[Block() for b in range(nr_blocks)], 
         nn.Linear(width, 10)
     )
-    model(torch.rand(1, 3, 32, 32)) # dummy input to initialize the lazy layer(s), make sure everything works
-    
-    # print(nr_parameters(model), " parameters")
+    model(torch.rand(2, 3, 32, 32)) # dummy input to initialize the lazy layer(s), make sure everything works
     
     return model
 
 
 LAYERS = {
-    "dense": Dense,
-    "lowrank": LowRank,
-    "monarch": Monarch,
-    "kron": Kronecker,
-    "kronecker": Kronecker,
-    "tt": TT
+    "dense": layers.Dense,
+    "lowrank": layers.LowRank,
+    "monarch": layers.Monarch,
+    "kron": layers.Kronecker,
+    "kronecker": layers.Kronecker,
+    "tt": layers.TT,
+    "btt": layers.BTT,
+    "vit_dense": layers.Dense,
+    "vit_lowrank": layers.LowRank,
+    "vit_monarch": layers.Monarch,
+    "vit_kron": layers.Kronecker,
+    "vit_kronecker": layers.Kronecker,
+    "vit_tt": layers.TT,
+    "vit_btt": layers.BTT,
 }
     
 
@@ -85,33 +106,61 @@ def main():
     parser.add_argument("--learning_rate", "-lr", type=float, default=1e-3,
                         help="learning rate for the optimizer, (default 1e-3)")
     
-    parser.add_argument("--batch_size", "-bs", type=int, default=250,
-                        help="batch size to use for training, (default 250)")
+    parser.add_argument("--batch_size", "-bs", type=int, default=1000,
+                        help="batch size to use for training, (default 1000)")
     
-    parser.add_argument("--epochs", "-e", type=int, default=100,
-                        help="the maximum nr of epochs of training, (default 100)")
+    parser.add_argument("--epochs", "-e", type=int, default=200,
+                        help="the maximum nr of epochs of training, (default 200)")
     
     parser.add_argument("--params", "-p", nargs="*", type=str,
                         help="Additional layer-specific parameters as key=value pairs (e.g. for -m=tt, --params rank=3 nr_cores=2)")
     
+    parser.add_argument("--weight_decay", "-wd", type=float, default=0.0,
+                        help="weight decay, default 0.0")
+    
+    parser.add_argument("--init_scale", "-s", type=float, default=1.0,
+                        help="modify initialization scale for the weights, default 1.0")
+    
+    parser.add_argument("--max_bs", type=int, default=50000,
+                        help="maximum batchsize the model can cope with, for evaluating training and test accuracy. Must lower for ViT")
+    
     args = parser.parse_args()
     
+    layers.set_scale(args.init_scale)
+    
+    layer_fn = None
+    vit = False
+    
+    if "vit" in args.layer:
+        vit = True
+        
     layer_fn = LAYERS[args.layer]
     
     params = {p.split("=")[0]: int(p.split("=")[1]) for p in args.params} if args.params else {}
 
-    
-    if layer_fn is LowRank:
-        model = create_model(args.depth, args.width, layer_fn, params["rank"])  
-    elif layer_fn is Monarch:
-        model = create_model(args.depth, args.width, layer_fn, params["nr_blocks"])
-    elif layer_fn is TT:
-        model = create_model(args.depth, args.width, layer_fn, params["nr_cores"], params["rank"])
+    if vit:
+        if layer_fn is layers.LowRank:
+            model = VisionTransformer(args.width, params["patch_size"], args.depth, params["nr_heads"], 10, layer_fn, params["rank"])  
+        elif layer_fn is layers.Monarch:
+            model = VisionTransformer(args.width, params["patch_size"], args.depth, params["nr_heads"], 10, layer_fn, params["nr_blocks"])
+        elif layer_fn is layers.TT or layer_fn is layers.BTT:
+            model = VisionTransformer(args.width, params["patch_size"], args.depth, params["nr_heads"], 10, layer_fn, params["nr_cores"], params["rank"])
+        else:
+            model = VisionTransformer(args.width, params["patch_size"], args.depth, params["nr_heads"], 10, layer_fn)
+        
+        model(torch.rand(2, 3, 32, 32))
     else:
-        model = create_model(args.depth, args.width, layer_fn)      
+        if layer_fn is layers.LowRank:
+            model = create_model(args.depth, args.width, layer_fn, params["rank"])  
+        elif layer_fn is layers.Monarch:
+            model = create_model(args.depth, args.width, layer_fn, params["nr_blocks"])
+        elif layer_fn is layers.TT or layer_fn is layers.BTT:
+            model = create_model(args.depth, args.width, layer_fn, params["nr_cores"], params["rank"])
+        else:
+            model = create_model(args.depth, args.width, layer_fn)      
 
     start = time.time()
-    training_losses, training_accuracies, test_losses, test_accuracies = train(model, args.epochs, args.learning_rate, args.batch_size)
+    training_losses, training_accuracies, test_losses, test_accuracies = train(model, args.epochs, args.learning_rate, args.batch_size, args.weight_decay, args.max_bs)
     end = time.time()
     
     output = {
@@ -122,6 +171,7 @@ def main():
         "lr": args.learning_rate,
         "batchsize": args.batch_size,
         "nr_epochs": len(training_losses),
+        "scale": args.init_scale,
         "time": end-start,
         "params": params,
         "train_losses": training_losses,
@@ -132,30 +182,6 @@ def main():
     
     print(json.dumps(output, indent=4))
     
-    # model = create_model(args.depth, args.width, layer_fn)
-
-# model = create_model(1, 256, Dense)
-
-# start = time.time()
-# train(model, 100, 1e-4, 250)
-# end = time.time()
-
-# print(end-start)
-
-
-
-# model = create_model(3, 64, LowRank, 5)
-# train_epoch(model)
-
-# model = create_model(3, 64, Monarch, 8)
-# train_epoch(model)
-
-# model = create_model(3, 64, TT, 2, 2)
-# train_epoch(model)
-
-# model = create_model(3, 64, Kronecker)
-# train_epoch(model)
-
 
 
 if __name__ == "__main__":

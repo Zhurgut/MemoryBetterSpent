@@ -1,0 +1,13 @@
+monarch[1024] blocksize 256 -> lr=2e-4
+monarch[1024] blocksize 128 -> lr=4e-4
+monarch[1024] blocksize 64 ->  lr=8e-4
+monarch[1024] blocksize 32 ->  lr=3e-3
+
+dense[1024] -> lr=3e-4
+dense[512] -> lr=2e-3
+dense[256] -> lr=5e-3
+
+tt[1000] rank 64 -> 2e-3
+tt[1000] rank 128 -> 1.5e-3
+tt[1000] rank 192 -> 1e-3
+tt[1000] rank 256 -> 8e-4
