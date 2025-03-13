@@ -166,4 +166,19 @@ begin
 end
 
 
-collect_measurements(vit_tt, 9*64, 6, 4e-4, 200, 500, 1, (patch_size=8, nr_heads=9, nr_cores=2, rank=128), max_bs=200, id=20)
+
+
+
+begin 
+    epochs = 200
+    id = 19
+    collect_measurements(vit_monarch, 6*64, 6, 5e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=3),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 6e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=4),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 6e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=6),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 7e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=8),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 7e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=12), max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 8e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=16), max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 9e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=24), max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 1e-3, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=32), max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_monarch, 6*64, 6, 1e-3, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=64), max_bs=500, weight_decay=0.01, id=id)
+end

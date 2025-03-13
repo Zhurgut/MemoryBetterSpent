@@ -28,6 +28,7 @@ function sparsity(layer::Layer, width, kwargs)
         ps = (r * s^(n+1)) * (2 + (n-2)*r)
         return round(100 * ps / dense)
     end
+    100
 
 end
 
@@ -283,7 +284,7 @@ end
 
 # max over nr_parameters
 # look at all measurements in ids for this, fix architecture (width and depth), take the best over all hyperparameters
-function plot_best(ids, width, depth)
+function plot_best(ids, width, depth, against_sparsity=true)
     infos = vcat([load_measurements_info(id) for id in ids]...)
     infos = infos[infos.done, :]
     ginfos = groupby(infos, [:width, :depth])
@@ -303,16 +304,26 @@ function plot_best(ids, width, depth)
     dense_train = [first(x) for x in smaller]
     dense_test  = [last(x)  for x in smaller]
 
+    xlabel ="nr_parameters\n"
+    x_axis_fn = r -> r.nr_parameters
+    if against_sparsity
+        xlabel = "sparsity [%]\n"
+        x_axis_fn = r -> sparsity(r.layer, r.width, r.kwargs)
+    end
+    
+    
+
     # smaller_dense_infos = [info for groups in g2 for info in groups  if info.width[1] <= width && info.depth[1] <= depth && info.nr_parameters[1] >= 0.9min_nr_parameters]
     # display(smaller_dense_infos)
 
     shapes =  [:circle, :rect, :star5, :diamond, :hexagon, :cross, :xcross, :utriangle, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star8, :+, :x]
 
-    P = plot(xlabel="nr_parameters\n", ylabel="train accuracy", legend_position=:outerleft, size=(1200, 600))
+    P = plot(xlabel=xlabel, ylabel="train accuracy", legend_position=:outerleft, size=(1400, 800))
     it = 1
     for t in train
         for (ir, r) in enumerate(eachrow(t))
-            scatter!(P, [r.nr_parameters], [r.best_train], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            # scatter!(P, [r.nr_parameters], [r.best_train], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            scatter!(P, [x_axis_fn(r)], [r.best_train], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
             if ir == length(shapes) it += 1 end
         end
         it += 1
@@ -320,18 +331,20 @@ function plot_best(ids, width, depth)
     ir = 1
     for t in dense_train
         for r in eachrow(t)
-            scatter!(P, [r.nr_parameters], [r.best_train], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            # scatter!(P, [r.nr_parameters], [r.best_train], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            scatter!(P, [x_axis_fn(r)], [r.best_train], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
             if ir == length(shapes) it += 1 end
             ir += 1
         end
     end 
     display(P)
 
-    P = plot(xlabel="nr_parameters\n", ylabel="test accuracy", legend_position=:outerleft, size=(1200, 600))
+    P = plot(xlabel=xlabel, ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
     it = 1
     for t in test
         for (ir, r) in enumerate(eachrow(t))
-            scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            # scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            scatter!(P, [x_axis_fn(r)], [r.best_test], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
             if ir == length(shapes) it += 1 end
         end
         it += 1
@@ -339,7 +352,8 @@ function plot_best(ids, width, depth)
     ir = 1
     for t in dense_test
         for r in eachrow(t)
-            scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            # scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            scatter!(P, [x_axis_fn(r)], [r.best_test], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
             if ir == length(shapes) it += 1 end
             ir += 1
         end

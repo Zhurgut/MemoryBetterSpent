@@ -5,7 +5,7 @@ parse_eval(x) = eval(Meta.parse(x))
 
 function load_measurements_info(id)
     WD = pwd()
-    cd(joinpath(@__DIR__, "measurements/$id"))
+    cd(joinpath(ROOT_DIR, "measurements/$id"))
 
     df = CSV.read("measurements_info.csv", DataFrame)
     df.layer = parse_eval.(df.layer)

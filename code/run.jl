@@ -3,6 +3,8 @@ using JSON3
 import CSV
 using DataFrames
 
+const ROOT_DIR = joinpath(@__DIR__, "..")
+
 @enum Layer dense lowrank monarch kronecker tt btt vit_dense vit_lowrank vit_monarch vit_kronecker vit_tt vit_btt
 
 struct Measurements
@@ -42,10 +44,12 @@ function train(layer::Layer, width::Int, depth::Int, lr::Float64, bs::Int, max_e
     params = to_string(;kwargs...)
 
     if params |> isnothing
-        cmd = `python main.py -l $(layer) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay -s $init_scale`
+        cmd = `python main.py -l $(layer) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay -s $init_scale --max_bs $max_bs`
     else
-        cmd = `python main.py -l $(layer) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay -s $init_scale -p $params`
+        cmd = `python main.py -l $(layer) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay -s $init_scale --max_bs $max_bs -p $params`
     end
+
+    println(cmd)
 
     local output
     try
@@ -99,7 +103,7 @@ end
 
 function collect_measurements(info::Measurements, id=nothing)
     WD = pwd()
-    cd(@__DIR__)
+    cd(ROOT_DIR)
 
     # initialize measurements directory if does not exist
     if !isdir("measurements") mkdir("measurements") end
@@ -122,7 +126,7 @@ function collect_measurements(info::Measurements, id=nothing)
 
     display(df)
 
-    if isfile("measurements_info.csv") # if infos already exists, append to existing ones TODO logic to make sure we dont collect same measurements again, or specifically do them again?
+    if isfile("measurements_info.csv") 
         old_df = load_measurements_info(id)
         df = augment_old_measuements_info(old_df, df)
     end
@@ -138,8 +142,7 @@ end
 
 function collect_measurements(df, id)
     WD = pwd()
-    cd(@__DIR__)
-    cd("measurements/$id")
+    cd(joinpath(ROOT_DIR, "measurements/$id"))
 
 
     if !isdir("data") mkdir("data") end
@@ -204,10 +207,13 @@ function collect_measurements(df, id)
             
         catch e 
             if e isa InterruptException
+                cd(WD)
                 rethrow(e)
             else
                 println("failed to collect measurements for:\n", df[current_row_idx, :])
                 # continue to next one
+                
+                # rethrow(e)
             end
         end
         current_row_idx += 1

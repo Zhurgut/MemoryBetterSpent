@@ -20,6 +20,7 @@ cifar10_test  = torchvision.datasets.CIFAR10(os.path.dirname(__file__), train = 
 
 wd = os.getcwd()
 os.chdir(os.path.dirname(__file__))
+os.chdir("../..")
 training_datasets = [torch.utils.data.TensorDataset(torch.load(f"augmented_datasets/data{i}.pt"), torch.load(f"augmented_datasets/labels{i}.pt")) for i in range(20)]
 os.chdir(wd)
 
@@ -166,7 +167,7 @@ def train(model, nr_epochs, lr, batch_size, weight_decay, max_bs):
         with torch.no_grad():
             train_accuracy, _, test_accuracy, avg_test_loss =  evaluate(model, train_labels, test_labels, max_bs)
         
-        print(epoch, ": ", train_accuracy.item(), ", ", test_accuracy.item())
+        # print(epoch, ": ", train_accuracy.item(), ", ", test_accuracy.item())
         
         training_losses.append(avg_train_loss)
         training_accuracies.append(train_accuracy.item())

@@ -23,6 +23,7 @@ training_loader = torch.utils.data.DataLoader(cifar10_train_augmented, batch_siz
 
 wd = os.getcwd()
 os.chdir(os.path.dirname(__file__))
+os.chdir("../..")
 
 for i in range(20):
     print(i, "/ ", 20)
