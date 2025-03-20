@@ -15,21 +15,76 @@ def set_scale(s):
 
 # size always the first parameter
 
+
+def to_dense(fn):
+    
+    def construct_linear(W, b):
+        out_d, in_d = W.shape
+        f = nn.Linear(in_d, out_d)
+        with torch.no_grad():
+            f.weight = nn.Parameter(W)
+            f.bias   = nn.Parameter(b)
+        return f
+    if isinstance(fn, BlockDiagonal):
+        W = fn.to_matrix()
+        b = fn.bias if fn.use_bias else torch.zeros(W.shape[0])
+        return W, b, construct_linear(W.T, b)
+    if isinstance(fn, nn.Linear):
+        return fn.weight.T, fn.bias, fn
+    elif isinstance(fn, LowRank):
+        W1 = fn.fn[0].weight
+        W2 = fn.fn[1].weight
+        W = W2 @ W1
+        b  = fn.bias
+        return W.T, b, construct_linear(W, b)
+    elif isinstance(fn, Monarch):
+        W = fn.fn[0].to_matrix()
+        W = fn.fn[1](W)
+        W2 = fn.fn[2].to_matrix()
+        b = fn.bias
+
+        W = W @ W2
+        
+        W = fn.fn[3](W)
+        return W, b, construct_linear(W.T, b)
+    elif isinstance(fn, TT) or isinstance(fn, BTT):
+        W = fn.to_matrix()
+        b = fn.bias
+        return W, b, construct_linear(W.T, b)
+    else:
+        print("hello there...")
+
+
+
 def Dense(size):
     return nn.Linear(size, size)
 
 
 
-def LowRank(size, rank):
-    return nn.Sequential(nn.Linear(size, rank), nn.Linear(rank, size))
+class LowRank(nn.Module):
+    
+    def __init__(self, size, rank):
+        super().__init__()
+        
+        self.fn = nn.Sequential(nn.Linear(size, rank, bias=False), nn.Linear(rank, size, bias=False))
+        
+        b = torch.zeros(size)
+        nn.init.uniform_(b, -1, 1)
+        self.bias   = nn.Parameter(np.sqrt(1/size) * b)
+    
+    def forward(self, x):
+        return self.fn(x) + self.bias
+        
 
 
 class BlockDiagonal(nn.Module):
     
-    def __init__(self, size, nr_blocks):
+    def __init__(self, size, nr_blocks, bias=True):
         super().__init__()
         
         assert size % nr_blocks == 0 
+        
+        self.use_bias = bias
         
         self.size = size
         self.nr_blocks = nr_blocks
@@ -40,9 +95,10 @@ class BlockDiagonal(nn.Module):
 
         self.weights = nn.Parameter(init_scale * w)
         
-        b = torch.zeros(size)
-        nn.init.uniform_(b, -1, 1)
-        self.bias   = nn.Parameter(np.sqrt(1/size) * b)
+        if self.use_bias:
+            b = torch.zeros(size)
+            nn.init.uniform_(b, -1, 1)
+            self.bias   = nn.Parameter(np.sqrt(1/size) * b)
     
     def forward(self, x):
         z = x.reshape(-1, self.size)
@@ -52,9 +108,13 @@ class BlockDiagonal(nn.Module):
         # 
         out = torch.bmm(input_mats, self.weights) # nr_blocks, batch_size, block_size
         
-        return (out.transpose(0, 1).reshape(batch_size, n) + self.bias).reshape(x.shape)
-
+        if self.use_bias:
+            return (out.transpose(0, 1).reshape(batch_size, n) + self.bias).reshape(x.shape)
+        else:
+            return out.transpose(0, 1).reshape(batch_size, n).reshape(x.shape)
     
+    def to_matrix(self):
+        return torch.block_diag(*self.weights)
 
 
 
@@ -85,13 +145,25 @@ class Permute(nn.Module):
     #     return p
 
 
-def Monarch(size, nr_blocks):
-    return nn.Sequential(
-        BlockDiagonal(size, nr_blocks), 
-        Permute(size, nr_blocks),        # P
-        BlockDiagonal(size, nr_blocks), 
-        Permute(size, size // nr_blocks) # P^T
-    )
+class Monarch(nn.Module):
+    
+    def __init__(self, size, nr_blocks):
+        super().__init__()
+        
+        self.fn = nn.Sequential(
+            BlockDiagonal(size, nr_blocks, bias=False), 
+            Permute(size, nr_blocks),        # P
+            BlockDiagonal(size, nr_blocks, bias=False), 
+            Permute(size, size // nr_blocks) # P^T
+        )
+        
+        b = torch.zeros(size)
+        nn.init.uniform_(b, -1, 1)
+        self.bias = nn.Parameter(np.sqrt(1/size) * b)
+
+    def forward(self, x):
+        return self.fn(x) + self.bias
+    
 
 
 
@@ -137,15 +209,16 @@ class TT(nn.Module):
         nn.init.normal_(G, std=sigma)
         return init_scale * G
 
-
-          
-    def forward(self, x):
-        # manifest the matrix, then matmul, much faster than the "efficient" way, probably because large batch size 
+    def to_matrix(self):
         G = self.cores[0][0, :, :, :]
         for core in self.cores[1:]:
             G = torch.einsum("...a,aijb->...ijb", G, core)
 
-        G = G.reshape(self.size, self.size)
+        return G.reshape(self.size, self.size)
+          
+    def forward(self, x):
+        # manifest the matrix, then matmul, much faster than the "efficient" way, probably because large batch size 
+        G = self.to_matrix()
 
         return (torch.matmul(x.reshape(-1, self.size), G) + self.bias).reshape(x.shape)
     
@@ -193,17 +266,18 @@ class BTT(nn.Module):
     
 
     def init_core(self, dims):
-        r = self.rank
-        c = self.nr_cores
-        t = 1/sqrt(self.size) # target std of entire weight matrix, to mimic kaiming_normal
-        sigma = (t * (sqrt(r) ** (1-c))) ** (1/c)
+        # r = self.rank
+        # c = self.nr_cores
+        # t = 1/sqrt(self.size) # target std of entire weight matrix, to mimic kaiming_normal
+        # sigma = (t * (sqrt(r) ** (1-c))) ** (1/c)
+        # G = torch.zeros(dims)
+        # nn.init.normal_(G, std=sigma)
         G = torch.zeros(dims)
-        nn.init.normal_(G, std=sigma)
+        nn.init.kaiming_normal_(G.reshape(-1, self.core_size, self.core_size))
+        
         return init_scale * G
 
-
-          
-    def forward(self, x):
+    def to_matrix(self):
         # efficient way, dont manifest matrix: (runs out of gpu memory because I use large batch size)
         d = self.core_size
         c = self.nr_cores
@@ -225,7 +299,15 @@ class BTT(nn.Module):
             i = d ** (self.nr_cores - idx - 1)
             G = torch.einsum("jxicb,jyiba->jxyica", core.reshape(j, d, i, *core.shape[-2:]), G.reshape(j, d ** (idx + 1), i, *G.shape[-2:]))
 
-        G = G.reshape(self.size, self.size)
+        return G.reshape(self.size, self.size)
+    
+    
+          
+    def forward(self, x):
+        
+        G = self.to_matrix()
+        # print(G.std())
+        # exit()
 
         return (torch.matmul(x.reshape(-1, self.size), G) + self.bias).reshape(x.shape)
 

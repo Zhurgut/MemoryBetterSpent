@@ -44,8 +44,8 @@ head_dim = 64
 
 # test_vit(nr_heads * head_dim, 16, nr_transformer_blocks, nr_heads, layers.Dense)
 # test_vit(nr_heads * head_dim, 8,  nr_transformer_blocks, nr_heads, layers.Dense)
-# test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Dense)
+test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Dense)
 # test_vit(nr_heads * head_dim, 2,  nr_transformer_blocks, nr_heads, layers.Dense)
 
-test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Monarch, 4)
-test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Monarch, 64)
+# test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Monarch, 4)
+# test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Monarch, 64)

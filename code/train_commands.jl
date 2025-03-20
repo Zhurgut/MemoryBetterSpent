@@ -121,24 +121,24 @@ end
 
 
 begin
-    id = 17
+    id = 20
 
-    collect_measurements(btt, 1024, 4, [5e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=2, rank=1), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [5e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=2, rank=2), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [5e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=2, rank=4), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [8e-4, 2.5e-3], 1000, 500, 1, (nr_cores=2, rank=8), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [6e-4, 2e-3],   1000, 500, 1, (nr_cores=2, rank=12), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [5e-4, 1.5e-3], 1000, 500, 1, (nr_cores=2, rank=16), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 1e-3,   1000, 200, 1, (nr_cores=2, rank=1), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 1e-3,   1000, 200, 1, (nr_cores=2, rank=2), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 1e-3,   1000, 200, 1, (nr_cores=2, rank=4), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 1e-3,   1000, 200, 1, (nr_cores=2, rank=8), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 1e-3,   1000, 200, 1, (nr_cores=2, rank=12), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 1e-3,   1000, 200, 1, (nr_cores=2, rank=16), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
 
-    collect_measurements(btt, 1000, 4, [5e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=3, rank=1), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1000, 4, [5e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=3, rank=2), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1000, 4, [5e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=3, rank=4), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1000, 4, [5e-4, 8e-4, 2.5e-3], 1000, 500, 1, (nr_cores=3, rank=8), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
+    collect_measurements(btt, 1000, 4, 1e-3,   1000, 200, 1, (nr_cores=3, rank=1), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1000, 4, 1e-3,   1000, 200, 1, (nr_cores=3, rank=2), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1000, 4, 1e-3,   1000, 200, 1, (nr_cores=3, rank=4), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1000, 4, 1e-3,   1000, 200, 1, (nr_cores=3, rank=8), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
 
-    collect_measurements(btt, 1024, 4, [4e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=5, rank=1), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [4e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=5, rank=2), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [4e-4, 1e-3, 3e-3],   1000, 500, 1, (nr_cores=5, rank=4), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
-    collect_measurements(btt, 1024, 4, [2e-4, 8e-4, 2.5e-3], 1000, 500, 1, (nr_cores=5, rank=8), init_scale=[0.7, 1.0, 1.4], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 5e-3,   1000, 200, 1, (nr_cores=5, rank=1), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 5e-3,   1000, 200, 1, (nr_cores=5, rank=2), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 5e-3,   1000, 200, 1, (nr_cores=5, rank=4), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
+    collect_measurements(btt, 1024, 4, 5e-3,   1000, 200, 1, (nr_cores=5, rank=8), init_scale=[0.7, 1.0, 1.4], weight_decay=[0.0, 0.01], id=id) # coresize: 32
 
 end
 
@@ -177,8 +177,11 @@ begin
     collect_measurements(vit_monarch, 6*64, 6, 6e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=6),  max_bs=500, weight_decay=0.01, id=id)
     collect_measurements(vit_monarch, 6*64, 6, 7e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=8),  max_bs=500, weight_decay=0.01, id=id)
     collect_measurements(vit_monarch, 6*64, 6, 7e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=12), max_bs=500, weight_decay=0.01, id=id)
-    collect_measurements(vit_monarch, 6*64, 6, 8e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=16), max_bs=500, weight_decay=0.01, id=id)
+    # collect_measurements(vit_monarch, 6*64, 6, 8e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=16), max_bs=500, weight_decay=0.01, id=id)
     collect_measurements(vit_monarch, 6*64, 6, 9e-4, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=24), max_bs=500, weight_decay=0.01, id=id)
-    collect_measurements(vit_monarch, 6*64, 6, 1e-3, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=32), max_bs=500, weight_decay=0.01, id=id)
+    # collect_measurements(vit_monarch, 6*64, 6, 1e-3, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=32), max_bs=500, weight_decay=0.01, id=id)
     collect_measurements(vit_monarch, 6*64, 6, 1e-3, 128, epochs, 1, (patch_size=4, nr_heads=6, nr_blocks=64), max_bs=500, weight_decay=0.01, id=id)
 end
+
+
+collect_measurements(vit_dense, 6*64, 6, 5e-4, 128, 200, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=21)

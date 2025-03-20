@@ -2,26 +2,27 @@
 import CSV
 using DataFrames, Plots
 
+include("run.jl")
 include("utils.jl")
 
 function sparsity(layer::Layer, width, kwargs)
     dense = width * width
-    if layer == lowrank
+    if layer == lowrank || layer == vit_lowrank
         r = kwargs.rank
         return round(100 * 2 * r * width / dense)
-    elseif layer == monarch
+    elseif layer == monarch || layer == vit_monarch
         n = kwargs.nr_blocks
         bs = width / n
         return round(100 * 2 * n * bs * bs / dense)
-    elseif layer == tt
+    elseif layer == tt || layer == vit_tt
         n = kwargs.nr_cores
         r = kwargs.rank
         s = width^(1/n)
         ps = (r * s * s) * (2 + (n-2)*r)
         return round(100 * ps / dense)
-    elseif layer == kronecker
+    elseif layer == kronecker || layer == vit_kronecker
         return round(100 * 2 * width / dense)
-    elseif layer == btt
+    elseif layer == btt || layer == vit_btt
         n = kwargs.nr_cores
         r = kwargs.rank
         s = width^(1/n)
@@ -297,7 +298,12 @@ function plot_best(ids, width, depth, against_sparsity=true)
     train = [first(x) for x in filtered]
     test  = [last(x)  for x in filtered]
 
-    denses = groupby(infos, :layer)[(layer=dense,)]
+    local denses
+    try
+        denses = groupby(infos, :layer)[(layer=dense,)]
+    catch e
+        denses = groupby(infos, :layer)[(layer=vit_dense,)]
+    end
     df = groupby(denses, [:width, :depth])
     smaller = [filter_out_bad_ones(df[key]) for key in keys(df) if key.width <= width && key.depth <= depth && !(key.width == width && key.depth == depth) && df[key].nr_parameters[1] >= 0.9*min_nr_parameters]
 

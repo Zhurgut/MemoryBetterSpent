@@ -211,6 +211,7 @@ function collect_measurements(df, id)
                 rethrow(e)
             else
                 println("failed to collect measurements for:\n", df[current_row_idx, :])
+                println(e)
                 # continue to next one
                 
                 # rethrow(e)
