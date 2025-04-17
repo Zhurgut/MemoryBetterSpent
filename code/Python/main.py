@@ -10,6 +10,9 @@ import time
 
 
 def nr_parameters(model):
+    if isinstance(model, layers.MaskedSparse):
+        return (model.mask.sum() + model.bias.numel()).item()
+    
     return sum(p.numel() for p in model.parameters())
 
 
@@ -75,6 +78,7 @@ def create_model(nr_blocks, width, layer_fn, *args):
 LAYERS = {
     "dense": layers.Dense,
     "lowrank": layers.LowRank,
+    "lowranklight": layers.LowRankLight,
     "monarch": layers.Monarch,
     "kron": layers.Kronecker,
     "kronecker": layers.Kronecker,
@@ -82,6 +86,7 @@ LAYERS = {
     "btt": layers.BTT,
     "vit_dense": layers.Dense,
     "vit_lowrank": layers.LowRank,
+    "vit_lowranklight": layers.LowRankLight,
     "vit_monarch": layers.Monarch,
     "vit_kron": layers.Kronecker,
     "vit_kronecker": layers.Kronecker,
@@ -139,7 +144,7 @@ def main():
     params = {p.split("=")[0]: int(p.split("=")[1]) for p in args.params} if args.params else {}
 
     if vit:
-        if layer_fn is layers.LowRank:
+        if layer_fn is layers.LowRank or layer_fn is layers.LowRankLight:
             model = VisionTransformer(args.width, params["patch_size"], args.depth, params["nr_heads"], 10, layer_fn, params["rank"])  
         elif layer_fn is layers.Monarch:
             model = VisionTransformer(args.width, params["patch_size"], args.depth, params["nr_heads"], 10, layer_fn, params["nr_blocks"])
@@ -150,7 +155,7 @@ def main():
         
         model(torch.rand(2, 3, 32, 32))
     else:
-        if layer_fn is layers.LowRank:
+        if layer_fn is layers.LowRank or layer_fn is layers.LowRankLight:
             model = create_model(args.depth, args.width, layer_fn, params["rank"])  
         elif layer_fn is layers.Monarch:
             model = create_model(args.depth, args.width, layer_fn, params["nr_blocks"])

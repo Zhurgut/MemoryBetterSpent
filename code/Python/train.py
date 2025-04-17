@@ -174,12 +174,12 @@ def train(model, nr_epochs, lr, batch_size, weight_decay, max_bs):
         test_losses.append(avg_test_loss.item())
         test_accuracies.append(test_accuracy.item())
         
-        # check for early stopping due to convergence
-        if epoch > 2*window_size:
-            old = max(training_accuracies[:-window_size])
-            new = max(training_accuracies[-window_size:])
-            if new/old - 1 < significant_improvement:
-                break
+        # # check for early stopping due to convergence
+        # if epoch > 2*window_size:
+        #     old = max(training_accuracies[:-window_size])
+        #     new = max(training_accuracies[-window_size:])
+        #     if new/old - 1 < significant_improvement:
+        #         break
         
         # stop if training has collapsed (probably learning rate too high...)
         if epoch > window_size and (training_accuracies[-1] < 0.5*max(training_accuracies) or training_accuracies[-1] < 0.2):

@@ -71,7 +71,7 @@ end
 general_plot_against_best(id::Int, x_col::Symbol, max_over_cols=[]) = general_plot_against_best([id], x_col, max_over_cols)
 
 function general_plot_against_best(ids, x_col::Symbol, max_over_cols=[])
-    all_cols = [:layer, :kwargs, :width, :depth, :lr, :bs, :wdecay, :init_scale]
+    all_cols = [:layer, :kwargs, :width, :depth, :lr, :bs, :wdecay, :init_scale, :max_epochs]
     infos = vcat([load_measurements_info(id) for id in ids]...)
     infos = infos[infos.done, :]
     gcols = [c for c in all_cols if c != x_col && c ∉ max_over_cols]
@@ -101,11 +101,11 @@ end
 
 function plot_everything(id)
     WD = pwd()
-    cd(joinpath(@__DIR__, "measurements/$id"))
+    cd(joinpath(@__DIR__, "../measurements/$id"))
 
     info = CSV.read("measurements_info.csv", DataFrame)
 
-    @assert all(info.done)
+    # @assert all(info.done)
 
     display(info)
 
@@ -126,7 +126,7 @@ end
 
 function plot_wd(id)
     WD = pwd()
-    cd(joinpath(@__DIR__, "measurements/$id"))
+    cd(joinpath(@__DIR__, "../measurements/$id"))
 
     info = CSV.read("measurements_info.csv", DataFrame)
 
@@ -285,7 +285,7 @@ end
 
 # max over nr_parameters
 # look at all measurements in ids for this, fix architecture (width and depth), take the best over all hyperparameters
-function plot_best(ids, width, depth, against_sparsity=true)
+function plot_best(ids, width, depth, against_sparsity=false)
     infos = vcat([load_measurements_info(id) for id in ids]...)
     infos = infos[infos.done, :]
     ginfos = groupby(infos, [:width, :depth])
@@ -313,7 +313,7 @@ function plot_best(ids, width, depth, against_sparsity=true)
     xlabel ="nr_parameters\n"
     x_axis_fn = r -> r.nr_parameters
     if against_sparsity
-        xlabel = "sparsity [%]\n"
+        xlabel = "density [%]\n"
         x_axis_fn = r -> sparsity(r.layer, r.width, r.kwargs)
     end
     
@@ -366,4 +366,25 @@ function plot_best(ids, width, depth, against_sparsity=true)
     end 
     display(P)
 
+end
+
+
+function plot_projection_results(filename)
+    # Load the data from the CSV file
+    df = CSV.read(joinpath(@__DIR__, "..", "measurements/projection", filename), DataFrame)
+    df = df[df.layer .!= "dense", :]
+    # Group by label (no aggregation, just to separate the data for each label)
+    grouped_df = groupby(df, :layer)
+
+    # Create the plot
+    p = plot(size=(1200, 800))  # Initialize the plot
+
+    # Loop through each group (each label) and plot it
+    for group in grouped_df
+        label_name = group[1, :layer]  # Get the label for the group
+        plot!(p, group.nr_parameters, group.op_norm, label=label_name, xlabel="nr parameters\n", ylabel="\nspectral norm (F - F')")
+    end
+
+    # Display the plot
+    p
 end

@@ -2,10 +2,11 @@
 using JSON3
 import CSV
 using DataFrames
+using Statistics: mean
 
 const ROOT_DIR = joinpath(@__DIR__, "..")
 
-@enum Layer dense lowrank monarch kronecker tt btt vit_dense vit_lowrank vit_monarch vit_kronecker vit_tt vit_btt
+@enum Layer dense lowrank lowranklight monarch kronecker tt btt vit_dense vit_lowrank vit_lowranklight vit_monarch vit_kronecker vit_tt vit_btt
 
 struct Measurements
     layers::Vector{Tuple{Layer, NamedTuple}}
@@ -129,6 +130,9 @@ function collect_measurements(info::Measurements, id=nothing)
     if isfile("measurements_info.csv") 
         old_df = load_measurements_info(id)
         df = augment_old_measuements_info(old_df, df)
+
+        # println(df)
+        # error("hello")
     end
 
     CSV.write("measurements_info.csv", df)
@@ -136,6 +140,56 @@ function collect_measurements(info::Measurements, id=nothing)
     collect_measurements(df, id)
 
     cd(WD)
+end
+
+function save_results(path, data, run)
+    N = data.nr_epochs
+    times = collect(LinRange(0, data.time, N+1))[2:end]
+    out = DataFrame(
+        [fill(run, N), data.train_losses, data.test_losses, data.train_accuracies, data.test_accuracies, times], 
+        [:run_id, :train_loss, :test_loss, :train_acc, :test_acc, :time]
+    )
+
+    results = if isfile(path)
+        CSV.read(path, DataFrame)
+    else 
+        DataFrame([[], [], [], [], [], []], [:run_id, :train_loss, :test_loss, :train_acc, :test_acc, :time])
+    end
+
+    append!(results, out)
+    CSV.write(path, results)
+end
+
+
+# assumes we are in a folder with a measurements_info.csv and a folder data
+function update_measurements_info!(df, idx, nr_parameters=nothing)
+    
+    if !(nr_parameters |> isnothing)
+        df.nr_parameters[idx] = nr_parameters
+    end
+
+    results = CSV.read("data/$idx.csv", DataFrame)
+    nr_runs = maximum(results.run_id)
+
+    best_train = []
+    best_test = []
+    epoch_of_best_test = []
+    epoch_of_best_train = []
+
+    g = groupby(results, :run_id)
+
+    for run = 1:nr_runs
+        push!(best_train, maximum(g[(run,)].train_acc))
+        push!(best_test, maximum(g[(run,)].test_acc))
+        push!(epoch_of_best_train, argmax(g[(run,)].train_acc))
+        push!(epoch_of_best_test, argmax(g[(run,)].test_acc))
+    end
+
+    df.best_train[idx]          = mean(best_train)
+    df.best_test[idx]           = mean(best_test)
+    df.epoch_of_best_train[idx] = mean(epoch_of_best_test)  |> round |> Int
+    df.epoch_of_best_test[idx]  = mean(epoch_of_best_train) |> round |> Int
+
 end
 
 
@@ -163,8 +217,6 @@ function collect_measurements(df, id)
             if isfile("data/$row.csv")
                 results = CSV.read("data/$row.csv", DataFrame)
                 run = maximum(results.run_id) + 1
-            else
-                results = DataFrame([[], [], [], [], [], []], [:run_id, :train_loss, :test_loss, :train_acc, :test_acc, :time])
             end
 
             while run <= df.nr_runs[row]
@@ -172,28 +224,11 @@ function collect_measurements(df, id)
                 # do the training
                 data = train(df.layer[row], df.width[row], df.depth[row], df.lr[row], df.bs[row], df.max_epochs[row], df.wdecay[row], df.init_scale[row], df.max_bs[row]; df.kwargs[row]...)
 
-                if run == 1
-                    df.nr_parameters[row] = data.nr_parameters
-                    df.best_train[row]          = maximum(data.train_accuracies)
-                    df.best_test[row]           = maximum(data.test_accuracies)
-                    df.epoch_of_best_train[row] = argmax(data.train_accuracies)
-                    df.epoch_of_best_test[row]  = argmax(data.test_accuracies)
-                else # compute the average
-                    df.best_train[row]          = ((run-1) * df.best_train[row]          + maximum(data.train_accuracies)) * (1 / run)
-                    df.best_test[row]           = ((run-1) * df.best_test[row]           + maximum(data.test_accuracies))  * (1 / run)
-                    df.epoch_of_best_train[row] = ((run-1) * df.epoch_of_best_train[row] + argmax(data.train_accuracies))  * (1 / run)
-                    df.epoch_of_best_test[row]  = ((run-1) * df.epoch_of_best_test[row]  + argmax(data.test_accuracies))   * (1 / run)
-                end
+                save_results("data/$row.csv", data, run)
 
-                N = data.nr_epochs
-                times = collect(LinRange(0, data.time, N+1))[2:end]
-                out = DataFrame(
-                    [fill(run, N), data.train_losses, data.test_losses, data.train_accuracies, data.test_accuracies, times], 
-                    [:run_id, :train_loss, :test_loss, :train_acc, :test_acc, :time]
-                )
-                append!(results, out)
+                update_measurements_info!(df, row, data.nr_parameters)
 
-                CSV.write("data/$row.csv", results)
+                CSV.write("measurements_info.csv", df)
 
                 run += 1
             end
@@ -201,8 +236,6 @@ function collect_measurements(df, id)
             df.done[row] = true
 
             CSV.write("measurements_info.csv", df)
-
-            display(results)
 
             
         catch e 

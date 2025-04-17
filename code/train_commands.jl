@@ -185,3 +185,113 @@ end
 
 
 collect_measurements(vit_dense, 6*64, 6, 5e-4, 128, 200, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=21)
+
+
+
+
+begin
+    id = 40
+    nr_runs = 3
+    max_epochs = 1200
+    wd = 0.0
+    lr = 8e-4
+
+    collect_measurements(dense, 1024,  4, lr, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+
+    
+
+    
+    collect_measurements(lowrank, 1024,  4, lr, 1000, max_epochs, nr_runs, (rank=128,), weight_decay=wd, id=id)
+    collect_measurements(lowrank, 1024,  4, lr, 1000, max_epochs, nr_runs, (rank=80,),  weight_decay=wd, id=id)
+    collect_measurements(lowrank, 1024,  4, lr, 1000, max_epochs, nr_runs, (rank=32,),  weight_decay=wd, id=id)
+
+    
+    collect_measurements(monarch, 1024,  4, lr, 1000, max_epochs, nr_runs, (nr_blocks=16,), weight_decay=wd, id=id)
+    collect_measurements(monarch, 1024,  4, lr, 1000, max_epochs, nr_runs, (nr_blocks=32,), weight_decay=wd, id=id)
+
+    collect_measurements(tt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=512)], weight_decay=wd, id=id)
+    # collect_measurements(tt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=384)], weight_decay=wd, id=id)
+    collect_measurements(tt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=256)], weight_decay=wd, id=id)
+    collect_measurements(tt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=128)], weight_decay=wd, id=id)
+    collect_measurements(tt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=80)], weight_decay=wd, id=id)
+    collect_measurements(tt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=32)], weight_decay=wd, id=id)
+
+    collect_measurements(btt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=16)], weight_decay=wd, id=id)
+    # collect_measurements(btt, 1024, 4, 1e-3, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=12)], weight_decay=wd, id=id)
+    collect_measurements(btt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=8)], weight_decay=wd, id=id)
+    collect_measurements(btt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=4)], weight_decay=wd, id=id)
+    collect_measurements(btt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=2)], weight_decay=wd, id=id)
+    collect_measurements(btt, 1024, 4, lr, 1000, max_epochs, nr_runs, [(nr_cores=2, rank=1)], weight_decay=wd, id=id)
+
+
+    # collect_measurements(dense, 672,   4, lr, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+    collect_measurements(dense, 704,   4, lr, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+    # collect_measurements(dense, 768,   4, lr, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+    collect_measurements(dense, 832,   4, lr, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+    # collect_measurements(dense, 896,   4, lr, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+    # collect_measurements(dense, 960,   4, lr, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+
+    id = 41
+    max_epochs = 6000
+    nr_runs = 1
+
+    collect_measurements(lowrank, 1024,  4, lr, 1000, max_epochs, nr_runs, (rank=512,), weight_decay=wd, id=id)
+    # collect_measurements(lowrank, 1024,  4, lr, 1000, max_epochs, nr_runs, (rank=384,), weight_decay=wd, id=id)
+    collect_measurements(lowrank, 1024,  4, lr, 1000, max_epochs, nr_runs, (rank=256,), weight_decay=wd, id=id)
+
+    collect_measurements(monarch, 1024,  4, lr, 1000, max_epochs, nr_runs, (nr_blocks=2,), weight_decay=wd, id=id)
+    collect_measurements(monarch, 1024,  4, lr, 1000, max_epochs, nr_runs, (nr_blocks=4,), weight_decay=wd, id=id)
+    collect_measurements(monarch, 1024,  4, lr, 1000, max_epochs, nr_runs, (nr_blocks=8,), weight_decay=wd, id=id)
+end
+
+
+begin
+    collect_measurements(monarch, 1024,  4, 4e-4, 1000, 2500, 3, (nr_blocks=2,), id=32)
+    collect_measurements(monarch, 1024,  4, 5e-4, 1000, 2500, 3, (nr_blocks=4,), id=32)
+    collect_measurements(monarch, 1024,  4, 6e-4, 1000, 2500, 3, (nr_blocks=8,), id=32)
+    collect_measurements(monarch, 1024,  4, 7e-4, 1000, 2500, 3, (nr_blocks=16,), id=32)
+    collect_measurements(monarch, 1024,  4, 8e-4, 1000, 2500, 3, (nr_blocks=32,), id=32)
+
+end
+
+begin
+    ids = [33, 34, 35, 36, 37]
+    nr_epochs = [300, 600, 1000, 1500, 2000]
+    for i=1:5
+        collect_measurements(monarch, 1024,  4, 6e-4, 1000, nr_epochs[i], 1, (nr_blocks=2,), id=ids[i])
+        collect_measurements(lowrank, 1024,  4, 6e-4, 1000, nr_epochs[i], 1, (rank=512,),    id=ids[i])
+        collect_measurements(tt     , 1024,  4, 6e-4, 1000, nr_epochs[i], 1, (nr_cores=2, rank=512), id=ids[i])
+        collect_measurements(btt,     1024,  4, 6e-4, 1000, nr_epochs[i], 1, (nr_cores=2, rank=16),  id=ids[i])
+    end
+end
+
+collect_measurements(monarch, 1024,  4, [3e-5, 1e-5], 1000, 300, 1, (nr_blocks=2,), id=27)
+
+
+
+begin
+    id = 28
+    nr_runs = 3
+    max_epochs = 10
+    wd = 0.01
+
+    collect_measurements(dense, 1024,  4, 7e-4, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+
+    collect_measurements(dense, 768,   4, 1e-3, 1000, max_epochs, nr_runs, weight_decay=wd, id=id)
+
+
+end
+
+
+
+begin
+    id = 50
+    wd = [0.0, 0.01]
+    collect_measurements(lowranklight, 1024,  4, 1e-3, 1000, 400, 1, (rank=960,), weight_decay=wd, id=id)
+    collect_measurements(lowranklight, 1024,  4, 1e-3, 1000, 400, 1, (rank=736,), weight_decay=wd, id=id)
+    collect_measurements(lowranklight, 1024,  4, 1e-3, 1000, 400, 1, (rank=512,), weight_decay=wd, id=id)
+    collect_measurements(lowranklight, 1024,  4, 1e-3, 1000, 400, 1, (rank=256,), weight_decay=wd, id=id)
+    collect_measurements(lowranklight, 1024,  4, 1e-3, 1000, 400, 1, (rank=128,), weight_decay=wd, id=id)
+    collect_measurements(lowranklight, 1024,  4, 1e-3, 1000, 400, 1, (rank=64,), weight_decay=wd, id=id)
+
+end

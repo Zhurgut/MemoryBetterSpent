@@ -4,6 +4,10 @@ from torch import nn
 import numpy as np
 from math import sqrt
 
+from latin_squares import latin_square
+
+from ViT import *
+
 
 
 init_scale = 1.0 # change init scale for Monarch, TT
@@ -60,6 +64,98 @@ def Dense(size):
     return nn.Linear(size, size)
 
 
+class MaskedSparse(nn.Module):
+    
+    def __init__(self, size, mask):
+        super().__init__()
+        
+        self.mask = mask
+        
+        self.size = size
+        
+        w = torch.zeros(size, size)
+        nn.init.kaiming_normal_(w)
+        self.weight = nn.Parameter(init_scale * w)
+        
+        b = torch.zeros(size)
+        nn.init.uniform_(b, -1, 1)
+        self.bias   = nn.Parameter(np.sqrt(1/size) * b)
+    
+    
+    def forward(self, x):
+        return x @ (self.mask * self.weight).T + self.bias
+    
+    
+    
+    def to(self, device):
+
+        super(MaskedSparse, self).to(device)
+
+        self.mask = self.mask.to(device)
+        
+        return self
+
+
+class Unstructured(MaskedSparse):
+    
+    def __init__(self, size, sparsity):
+        
+        m = torch.rand(size, size)
+        t = torch.sort(m.flatten(), descending=True)[0][(sparsity * torch.ones(1) * size*size).floor().int()]
+        mask = m >= t
+        
+        super().__init__(size, mask)
+        
+
+    @staticmethod
+    def from_mag_pruned(M, sparsity):
+        size = M.shape[0]
+        assert M.shape == (size, size)
+        
+        t = torch.sort(M.abs().flatten(), descending=True)[0][(sparsity * torch.ones(1) * size*size).floor().int()]
+        mask = M.abs() >= t
+
+        out = Unstructured(size, sparsity)
+        out.weight = nn.Parameter(M.clone().detach())
+        out.mask = mask
+        
+        return out
+
+
+
+class BlockSparse(MaskedSparse):
+        
+    def __init__(self, size, nr_blocks_per_row, nr_blocks_to_drop_per_row):
+            
+        S = latin_square(nr_blocks_per_row)
+        block_size = size // nr_blocks_per_row
+
+        m = S > nr_blocks_to_drop_per_row
+        mask = m.repeat_interleave(block_size, dim=0).repeat_interleave(block_size, dim=1)
+        
+        super().__init__(size, mask)
+
+
+    @staticmethod
+    def from_mag_pruned(M, nr_blocks_per_row, nr_blocks_to_drop_per_row):
+        size = M.shape[0]
+        assert M.shape == (size, size)
+        
+        block_size = size // nr_blocks_per_row
+        blocks_to_keep = nr_blocks_per_row * (nr_blocks_per_row - nr_blocks_to_drop_per_row)
+        
+        Z = nn.AvgPool2d(block_size, stride=block_size, divisor_override=1)(M.abs().unsqueeze(0).unsqueeze(0)).squeeze()
+        t = torch.sort(Z.flatten(), descending=True)[0][blocks_to_keep-1]
+        m = Z >= t
+        mask = m.repeat_interleave(block_size, dim=0).repeat_interleave(block_size, dim=1)
+
+        out = BlockSparse(size, nr_blocks_per_row, nr_blocks_to_drop_per_row)
+        out.weight = nn.Parameter(M.clone().detach())
+        out.mask = mask
+        
+        return out
+
+
 
 class LowRank(nn.Module):
     
@@ -67,6 +163,7 @@ class LowRank(nn.Module):
         super().__init__()
         
         self.fn = nn.Sequential(nn.Linear(size, rank, bias=False), nn.Linear(rank, size, bias=False))
+    
         
         b = torch.zeros(size)
         nn.init.uniform_(b, -1, 1)
@@ -74,6 +171,54 @@ class LowRank(nn.Module):
     
     def forward(self, x):
         return self.fn(x) + self.bias
+
+
+
+class LowRankLight(nn.Module):
+    
+    def __init__(self, size, rank):
+        super().__init__()
+        
+        self.size = size
+        self.rank = rank
+
+        self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(size, rank)))
+        self.B = nn.Parameter(nn.init.kaiming_normal_(torch.empty(rank, size-rank)))
+    
+        
+        b = torch.zeros(size)
+        nn.init.uniform_(b, -1, 1)
+        self.bias   = nn.Parameter(np.sqrt(1/size) * b)
+    
+    
+    
+    
+    @staticmethod
+    def from_matrix(M, rank):
+        size = M.shape[0]
+        assert M.shape == (size, size)
+        U, S, Vt = torch.linalg.svd(M)
+        S = torch.diag(S)
+        
+        A = U[:, :rank] @ S[:rank, :rank]
+        B = Vt[:rank, :]
+        B1 = B[:, :rank]
+        B2 = B[:, rank:]
+        
+        X = A @ B1
+        Y = torch.linalg.pinv(B1) @ B2
+        
+        out = LowRankLight(size, rank)
+        out.A = nn.Parameter(X)
+        out.B = nn.Parameter(Y)
+        
+        return out
+        
+        
+    
+    def forward(self, x):
+        W = torch.cat((self.A, self.A @ self.B), dim=1)
+        return x @ W.T + self.bias
         
 
 
@@ -149,6 +294,7 @@ class Monarch(nn.Module):
     
     def __init__(self, size, nr_blocks):
         super().__init__()
+        self.size = size
         
         self.fn = nn.Sequential(
             BlockDiagonal(size, nr_blocks, bias=False), 
@@ -162,7 +308,8 @@ class Monarch(nn.Module):
         self.bias = nn.Parameter(np.sqrt(1/size) * b)
 
     def forward(self, x):
-        return self.fn(x) + self.bias
+        M = self.fn(torch.eye(self.size, self.size).to(x.device))
+        return x @ M.T + self.bias
     
 
 
@@ -240,7 +387,7 @@ class BTT(nn.Module):
         self.core_size = int(round(size**(1/nr_cores)))
         
         assert self.core_size ** nr_cores == size
-        assert self.check_rank_not_too_big(size, rank, nr_cores), "rank too big, more parameters than dense model..."
+        # assert self.check_rank_not_too_big(size, rank, nr_cores), "rank too big, more parameters than dense model..."
 
         self.size = size
         self.nr_cores = nr_cores
@@ -265,6 +412,38 @@ class BTT(nn.Module):
         return nr_params <= size*size
     
 
+    @staticmethod
+    def from_matrix(M, rank):
+        size = M.shape[0]
+        assert M.shape == (size, size)
+        
+        out = BTT(size, 2, rank)
+        d = out.core_size
+        
+        m = M.reshape(d, d, d, d)
+        
+        
+        with torch.no_grad():
+            for i in range(d):
+                for j in range(d):
+                    c = m[i, j, :, :]
+                    # print(i, ", ", j, ":\n", c)
+                    U, S, Vh = torch.linalg.svd(c)
+                    # if i == j == 0:
+                    #     print(c)
+                    #     print(U)
+                    #     print(S)
+                    #     print(Vh)
+                        
+                    s = S[0:rank].sqrt()
+                    
+                    for r in range(rank):
+                        out.cores[0].reshape(d, d, d, rank)[i, j, :, r] = s[r] * U[:, r]
+                        out.cores[1].reshape(d, d, d, rank)[i, j, :, r] = s[r] * Vh[r, :]
+        
+        return out
+    
+    
     def init_core(self, dims):
         # r = self.rank
         # c = self.nr_cores
@@ -297,7 +476,7 @@ class BTT(nn.Module):
             # t = self.nr_cores - 1 - idx
             j = d ** (idx+1)
             i = d ** (self.nr_cores - idx - 1)
-            G = torch.einsum("jxicb,jyiba->jxyica", core.reshape(j, d, i, *core.shape[-2:]), G.reshape(j, d ** (idx + 1), i, *G.shape[-2:]))
+            G = torch.einsum("jixcb,jiyba->jiyxca", core.reshape(j, i, d, *core.shape[-2:]), G.reshape(j, i, d ** (idx + 1), *G.shape[-2:]))
 
         return G.reshape(self.size, self.size)
     
@@ -312,118 +491,30 @@ class BTT(nn.Module):
         return (torch.matmul(x.reshape(-1, self.size), G) + self.bias).reshape(x.shape)
 
 
-class SkipConnection(nn.Module):
+
+
+class BTTLight(nn.Module):
     
-    def __init__(self, fn):
-        super().__init__()
-        self.fn = fn
-    
-    def forward(self, x):
-        return x + self.fn(x)
-
-
-def Patchify(patch_size):
-    return nn.Unfold((patch_size, patch_size), stride=patch_size)   
-
-
-
-class Embedding(nn.Module):
-    
-    def __init__(self, embed_dim):
-        super().__init__()
-        self.out_dim = embed_dim
-        self.embed = nn.LazyLinear(self.out_dim)
-        
-    def forward(self, x):
-        BS, d, nr_patches = x.shape
-        return self.embed(x.transpose(1, 2)) # -> (BS, nr_patches, embed_dim)
-
-
-class PosEncoding(nn.Module):
-    
-    "also adds the CLS token"
-    
-    def __init__(self, embed_dim, nr_patches):
+    def __init__(self, size, rank): # nr cores = 2
         super().__init__()
         
-        self.embed_dim = embed_dim
-        self.nr_patches = nr_patches
+        self.size = size
+
+        self.core_size = int(round(sqrt(size)))
+        assert self.core_size * self.core_size == size
         
-        self.cls = nn.Parameter(torch.randn(1, 1, embed_dim))
+        self.nr_blocks = size
 
-        self.positional_encoding = nn.Parameter(torch.randn(nr_patches + 1, embed_dim))
+        self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, self.core_size, rank)))
+        self.B = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, rank, self.core_size - rank)))  
 
-
-    def forward(self, x):
-        BS, nr_patches, embed_dim = x.shape
-        assert embed_dim == self.embed_dim
-
-        return torch.cat([self.cls.expand(BS, -1, -1), x], dim=1) + self.positional_encoding
-
-
-
-class MultiHeadAttention(nn.Module):
+        b = torch.zeros(size)
+        nn.init.uniform_(b, -1, 1)
+        self.bias = nn.Parameter(np.sqrt(1/size) * b)
     
-    def __init__(self, embed_dim, nr_heads, layer_fn, *args):
-        super().__init__()
-        
-        assert embed_dim % nr_heads == 0
-        
-        self.nr_heads = nr_heads
-        
-        self.Q = layer_fn(embed_dim, *args)
-        self.K = layer_fn(embed_dim, *args)
-        self.V = layer_fn(embed_dim, *args)
-        
     
     def forward(self, x):
-        BS, seq_len, embed_dim = x.shape
-        q = self.Q(x.reshape((-1, embed_dim))).reshape(BS, seq_len, self.nr_heads, -1).transpose(1, 2)
-        k = self.K(x.reshape((-1, embed_dim))).reshape(BS, seq_len, self.nr_heads, -1).transpose(1, 2)
-        v = self.V(x.reshape((-1, embed_dim))).reshape(BS, seq_len, self.nr_heads, -1).transpose(1, 2)
+        AB = torch.bmm(self.A, self.B) # nr_blocks, core_size, core_size - rank
+        W = torch.cat((self.A, AB), dim = 2).reshape(self.size, self.size)
         
-        out = nn.functional.scaled_dot_product_attention(q, k, v) # BS, nr_heads, seq_len, head_dim
-        
-        return out.transpose(1, 2).reshape(x.shape) # BS, seq_len, embed_dim 
-
-
-
-class ClassificationHead(nn.Module):
-    
-    def __init__(self, nr_classes):
-        super().__init__()
-        
-        self.fn = nn.LazyLinear(nr_classes)
-    
-    def forward(self, x):
-        BS, seq_len, embed_dim = x.shape
-        
-        return self.fn(x[:, 0, :])
-    
-
-
-
-        
-
-def TransformerBlock(embed_dim, nr_heads, layer_fn, *args):
-    return nn.Sequential(
-        SkipConnection(
-            nn.Sequential(
-                nn.LayerNorm(embed_dim), 
-                MultiHeadAttention(embed_dim, nr_heads, layer_fn, *args)
-            )
-        ),
-        SkipConnection(
-            nn.Sequential(
-                nn.LayerNorm(embed_dim), 
-                layer_fn(embed_dim, *args),
-                # nn.GELU(),
-                nn.ReLU(),
-                nn.Dropout(p=0.2),
-                layer_fn(embed_dim, *args),
-                nn.Dropout(p=0.2),
-            )
-        )
-    )
-
-
+        return x @ W.T + self.bias
