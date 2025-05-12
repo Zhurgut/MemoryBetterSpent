@@ -39,24 +39,32 @@ def test_vit(embed_dim, patch_size, nr_blocks, nr_heads, layer_fn, *args):
     
 
 nr_transformer_blocks = 6
-nr_heads = 6
-head_dim = 64
+nr_heads = 8
+head_dim = 128
 
 # test_vit(nr_heads * head_dim, 16, nr_transformer_blocks, nr_heads, layers.Dense)
 # test_vit(nr_heads * head_dim, 8,  nr_transformer_blocks, nr_heads, layers.Dense)
 # test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Dense)
+test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.LowRankLight, 73)
 # test_vit(nr_heads * head_dim, 2,  nr_transformer_blocks, nr_heads, layers.Dense)
 
 # test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Monarch, 4)
 # test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Monarch, 64)
 
 
+nr_transformer_blocks = 6
+nr_heads = 6
+head_dim = 64
+
+# test_vit(nr_heads * head_dim, 16, nr_transformer_blocks, nr_heads, layers.Dense)
+# test_vit(nr_heads * head_dim, 8,  nr_transformer_blocks, nr_heads, layers.Dense)
+# test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Dense)
 
 
 
-from projection import *
+# from projection import *
 
-m = torch.diag(torch.Tensor([1, 2, 3, 4, 5, 6, 7, 8, 9]))
+# m = torch.diag(torch.Tensor([1, 2, 3, 4, 5, 6, 7, 8, 9]))
 # m = torch.zeros(9, 9)
 # for i in range(9):
 #     for j in range(i, 9):
@@ -73,44 +81,44 @@ m = torch.diag(torch.Tensor([1, 2, 3, 4, 5, 6, 7, 8, 9]))
 # m[0, 7] = 1
 # m[0, 5] = 0.3
 
-m = torch.randn(9, 9)
+# m = torch.randn(9, 9)
 
 
-torch.set_printoptions(sci_mode=False, linewidth=200, precision=2)
+# torch.set_printoptions(sci_mode=False, linewidth=200, precision=2)
 
-for rank in range(1, 4):
+# for rank in range(1, 4):
     
-    print(rank)
+#     print(rank)
     
-    # target = Dense(9)
-    # target.weight = nn.Parameter(m.T)
-    # target.bias = nn.Parameter(torch.zeros(9))
-    # X = F.normalize(torch.randn(100, 9), p=2, dim=1)
+#     # target = Dense(9)
+#     # target.weight = nn.Parameter(m.T)
+#     # target.bias = nn.Parameter(torch.zeros(9))
+#     # X = F.normalize(torch.randn(100, 9), p=2, dim=1)
     
-    # model = optimize(target.to(device), 9, X.to(device), 1e-3, 8000, BTT, 2, rank)[1]
+#     # model = optimize(target.to(device), 9, X.to(device), 1e-3, 8000, BTT, 2, rank)[1]
 
-    # rank = 3
+#     # rank = 3
 
-    # print(m)
+#     # print(m)
 
-    btt = BTT.from_matrix(m, rank)
+#     btt = BTT.from_matrix(m, rank)
 
-    btt.bias = nn.Parameter(torch.zeros(9))
+#     btt.bias = nn.Parameter(torch.zeros(9))
 
-    out = btt(torch.eye(9, 9))
+#     out = btt(torch.eye(9, 9))
     
-    # print("optimal cores:")
-    # print(model.cores[0].reshape(3, 3, 3, rank))
-    # print(model.cores[1].reshape(3, 3, 3, rank))
-    # print("projected cores:")
-    # print(btt.cores[0].reshape(3, 3, 3, rank))
-    # print(btt.cores[1].reshape(3, 3, 3, rank))
-    # # print(btt.cores[0].reshape(3, 3, 3, rank), btt.cores[1].reshape(3, 3, 3, rank))
-    # print("target matrix:")
-    # print(m)
-    # print("projected matrix:")
-    # print(out)
-    # print("optimal matrix")
-    # print(model(torch.eye(9, 9).to(device)))
+#     # print("optimal cores:")
+#     # print(model.cores[0].reshape(3, 3, 3, rank))
+#     # print(model.cores[1].reshape(3, 3, 3, rank))
+#     # print("projected cores:")
+#     # print(btt.cores[0].reshape(3, 3, 3, rank))
+#     # print(btt.cores[1].reshape(3, 3, 3, rank))
+#     # # print(btt.cores[0].reshape(3, 3, 3, rank), btt.cores[1].reshape(3, 3, 3, rank))
+#     # print("target matrix:")
+#     # print(m)
+#     # print("projected matrix:")
+#     # print(out)
+#     # print("optimal matrix")
+#     # print(model(torch.eye(9, 9).to(device)))
 
-    print((out - m).reshape(-1).norm())
+#     print((out - m).reshape(-1).norm())

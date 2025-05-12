@@ -154,3 +154,12 @@ function augment_old_measuements_info(old_df, df)
 end
 
 
+function get_time(id, row)
+    WD = pwd()
+    cd(joinpath(@__DIR__, "..", "measurements", "$id", "data"))
+    csv = CSV.read("$row.csv", DataFrame)
+    out = csv[end, :time]
+    cd(WD)
+    return out
+end
+

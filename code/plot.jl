@@ -28,6 +28,10 @@ function sparsity(layer::Layer, width, kwargs)
         s = width^(1/n)
         ps = (r * s^(n+1)) * (2 + (n-2)*r)
         return round(100 * ps / dense)
+    elseif layer == lowranklight || layer== vit_lowranklight
+        k = kwargs.rank
+        n = width
+        return round(100 * (n*k + (n-k)*k) / (n*n))
     end
     100
 
@@ -285,12 +289,12 @@ end
 
 # max over nr_parameters
 # look at all measurements in ids for this, fix architecture (width and depth), take the best over all hyperparameters
-function plot_best(ids, width, depth, against_sparsity=false)
+function plot_best(ids, width, depth, against_sparsity=false, range=1.1, same_depth=true)
     infos = vcat([load_measurements_info(id) for id in ids]...)
     infos = infos[infos.done, :]
     ginfos = groupby(infos, [:width, :depth])
     same_arch = vcat([
-        ginfos[(width=key.width, depth=depth)] for key in keys(ginfos) if 0.9*width <= key.width <= 1.1*width && key.depth == depth
+        ginfos[(width=key.width, depth=depth)] for key in keys(ginfos) if (1/range)*width <= key.width <= range*width && (!same_depth || key.depth == depth)
     ]...)
     filtered = [filter_out_bad_ones(info) for info in groupby(same_arch, [:layer])]
     min_nr_parameters = minimum(min(minimum(first(x).nr_parameters), minimum(last(x).nr_parameters)) for x in filtered)
@@ -377,7 +381,7 @@ function plot_projection_results(filename)
     grouped_df = groupby(df, :layer)
 
     # Create the plot
-    p = plot(size=(1200, 800))  # Initialize the plot
+    p = plot(size=(800, 600))  # Initialize the plot
 
     # Loop through each group (each label) and plot it
     for group in grouped_df
@@ -387,4 +391,41 @@ function plot_projection_results(filename)
 
     # Display the plot
     p
+end
+
+
+function plot_runtimes(id::Int)
+    info = load_measurements_info(id)
+    by_bs = groupby(info, :bs)
+    by_bs = [by_bs[key] for key in keys(by_bs)]
+    P = plot(title="runtimes", size(800, 600), ylims=(0, 600))
+    
+    for df in by_bs
+        by_lr = groupby(df, :layer)
+        dense = by_lr[(vit_dense,)]
+        t = get_time(id, dense[1, :row])
+        hline!(P, [t], label="dense bs=$(dense.bs[1])")
+        times = get_time.(id, by_lr[(vit_lowranklight,)].row)
+        nr_params = by_lr[(vit_lowranklight,)].nr_parameters
+        plot!(P, nr_params, times, label="bs=$(dense.bs[1])")
+    end
+    P
+end
+
+
+function plot_profiling(filename)
+    df = CSV.read(joinpath(@__DIR__, "..", "measurements/profiling", filename), DataFrame)
+    by_bs = groupby(df, :batch_size)
+    by_model = groupby(df, [:model, :nr_parameters])
+    for g in by_bs
+        println(g[findall(==("lowrank_light"), g.model), :])
+        l = g[findall(==("lowrank_light"), g.model), :]
+        P = plot(l.nr_parameters, [l.cpu_forward_us l.cpu_backward_us l.gpu_forward_us], label=["lrl cpu fw" "lrl bw" "lrl gpu fw"], title="$(g[1, :batch_size])", 
+            ylims=(0, max(maximum.((df.cpu_forward_us, df.cpu_backward_us, df.gpu_forward_us))...))
+        )
+        display(g[1, :])
+        d = g[findfirst(==("dense"), g.model), :]
+        hline!(P, [d.cpu_forward_us d.cpu_backward_us d.gpu_forward_us], label=["dense cpu fw" "dense bw" "dense gpu fw"])
+        display(P)
+    end
 end

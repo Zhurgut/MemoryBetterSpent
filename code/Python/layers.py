@@ -7,6 +7,7 @@ from math import sqrt
 from latin_squares import latin_square
 
 from ViT import *
+import lowrankLight
 
 
 
@@ -173,53 +174,10 @@ class LowRank(nn.Module):
         return self.fn(x) + self.bias
 
 
+def LowRankLight(size, rank):
+    return lowrankLight.LowRankLight(size, size, rank)
 
-class LowRankLight(nn.Module):
-    
-    def __init__(self, size, rank):
-        super().__init__()
-        
-        self.size = size
-        self.rank = rank
-
-        self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(size, rank)))
-        self.B = nn.Parameter(nn.init.kaiming_normal_(torch.empty(rank, size-rank)))
-    
-        
-        b = torch.zeros(size)
-        nn.init.uniform_(b, -1, 1)
-        self.bias   = nn.Parameter(np.sqrt(1/size) * b)
-    
-    
-    
-    
-    @staticmethod
-    def from_matrix(M, rank):
-        size = M.shape[0]
-        assert M.shape == (size, size)
-        U, S, Vt = torch.linalg.svd(M)
-        S = torch.diag(S)
-        
-        A = U[:, :rank] @ S[:rank, :rank]
-        B = Vt[:rank, :]
-        B1 = B[:, :rank]
-        B2 = B[:, rank:]
-        
-        X = A @ B1
-        Y = torch.linalg.pinv(B1) @ B2
-        
-        out = LowRankLight(size, rank)
-        out.A = nn.Parameter(X)
-        out.B = nn.Parameter(Y)
-        
-        return out
-        
-        
-    
-    def forward(self, x):
-        W = torch.cat((self.A, self.A @ self.B), dim=1)
-        return x @ W.T + self.bias
-        
+LowRankLight.from_matrix = lowrankLight.LowRankLight.from_matrix  
 
 
 class BlockDiagonal(nn.Module):

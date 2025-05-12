@@ -282,6 +282,14 @@ begin
 
 end
 
+begin 
+    id=38
+    nr_epochs = 2
+    collect_measurements(vit_dense, 6*64, 6, 5e-4, 128, nr_epochs, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=id)
+    for rank in [384, 383, 380]
+        collect_measurements(vit_lowranklight, 6*64, 6, 5e-4, 128, nr_epochs, 1, (patch_size=4, nr_heads=6, rank=rank),  max_bs=500, weight_decay=0.01, id=id)
+    end
+end
 
 
 begin
@@ -295,3 +303,54 @@ begin
     collect_measurements(lowranklight, 1024,  4, 1e-3, 1000, 400, 1, (rank=64,), weight_decay=wd, id=id)
 
 end
+
+begin 
+    id = 102
+    nr_epochs = 10
+    for bs in [128]
+        collect_measurements(vit_dense, 6*64, 6, 5e-4, bs, nr_epochs, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=id)
+        for rank in [64, 128, 192, 256, 320, 380] # 1 to 384
+            collect_measurements(vit_lowranklight, 6*64, 6, 5e-4, bs, nr_epochs, 1, (patch_size=4, nr_heads=6, rank=rank),  max_bs=500, weight_decay=0.01, id=id)
+        end
+    end
+end
+
+
+
+begin 
+    id = 110
+    nr_epochs = 40
+    bs = 128
+    collect_measurements(vit_dense, 6*64, 6, 5e-4, bs, nr_epochs, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_lowranklight, 6*64, 6, 5e-4, bs, nr_epochs, 1, (patch_size=4, nr_heads=6, rank=64),  max_bs=500, weight_decay=0.01, id=id)
+
+end
+
+begin 
+    id = 120
+    nr_epochs = 10
+    collect_measurements(vit_lowranklight, 8*128, 6, 5e-4, 128, nr_epochs, 1, (patch_size=4, nr_heads=8, rank=73),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_dense, 6*64, 6, 5e-4, 128, nr_epochs, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=id)
+    
+end
+
+
+begin 
+    id = 121
+    nr_epochs = 40
+    collect_measurements(vit_lowranklight, 8*128, 6, [2.5e-4, 3.75e-4, 5e-4], 128, nr_epochs, 2, (patch_size=4, nr_heads=8, rank=73),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_dense, 6*64, 6, [2.5e-4, 3.75e-4, 5e-4], 128, nr_epochs, 2, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=id)
+    
+end
+
+begin 
+    id = 122
+    nr_epochs = 100
+    collect_measurements(vit_lowranklight, 8*128, 6, [3.75e-4], 128, nr_epochs, 1, (patch_size=4, nr_heads=8, rank=73),  max_bs=500, weight_decay=0.01, id=id)
+    collect_measurements(vit_dense, 6*64, 6, [3.75e-4], 128, nr_epochs, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=id)
+
+    # collect_measurements(vit_lowranklight, 8*128, 6, 5e-4, 128, nr_epochs, 1, (patch_size=4, nr_heads=8, rank=73),  max_bs=500, weight_decay=0.01, id=id)
+    # collect_measurements(vit_dense, 6*64, 6, 5e-4, 128, nr_epochs, 1, (patch_size=4, nr_heads=6),  max_bs=500, weight_decay=0.01, id=id)
+    
+end
+

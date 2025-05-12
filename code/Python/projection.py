@@ -141,29 +141,29 @@ def collect256(M, nr_runs, nr_steps, p=4):
     dense = ("dense", *project(M, 1, Dense, nr_steps=nr_steps, X=X, p=p))
     
     
-    blocks = [
-        project(M, nr_runs, BlockSparse, *(args_blocksparse[i]), nr_steps=nr_steps, X=X, p=p)
-        for i in range(len(args_blocksparse))
-    ]
-    blocks = add_label("block_sparse", blocks)
+    # blocks = [
+    #     project(M, nr_runs, BlockSparse, *(args_blocksparse[i]), nr_steps=nr_steps, X=X, p=p)
+    #     for i in range(len(args_blocksparse))
+    # ]
+    # blocks = add_label("block_sparse", blocks)
     
     
-    def from_block_mag_pruned(size, nr_blocks_per_row, nr_blocks_to_drop):
-        return BlockSparse.from_mag_pruned(M, nr_blocks_per_row, nr_blocks_to_drop)
+    # def from_block_mag_pruned(size, nr_blocks_per_row, nr_blocks_to_drop):
+    #     return BlockSparse.from_mag_pruned(M, nr_blocks_per_row, nr_blocks_to_drop)
 
-    block_mag_prune = [
-        project(M, 1, from_block_mag_pruned, *(args_blocksparse[i]), nr_steps=nr_steps, X=X, p=p)
-        for i in range(len(args_blocksparse))
-    ]
-    block_mag_prune = add_label("block_mag_pruned", block_mag_prune)
+    # block_mag_prune = [
+    #     project(M, 1, from_block_mag_pruned, *(args_blocksparse[i]), nr_steps=nr_steps, X=X, p=p)
+    #     for i in range(len(args_blocksparse))
+    # ]
+    # block_mag_prune = add_label("block_mag_pruned", block_mag_prune)
     
     
     
-    unstructured = [
-        project(M, nr_runs, Unstructured, args_unstructured[i], nr_steps=nr_steps, X=X, p=p)
-        for i in range(len(args_unstructured))
-    ]
-    unstructured = add_label("unstructured", unstructured)
+    # unstructured = [
+    #     project(M, nr_runs, Unstructured, args_unstructured[i], nr_steps=nr_steps, X=X, p=p)
+    #     for i in range(len(args_unstructured))
+    # ]
+    # unstructured = add_label("unstructured", unstructured)
     
     
     def from_mag_pruned(size, sparsity):
@@ -173,7 +173,7 @@ def collect256(M, nr_runs, nr_steps, p=4):
         project(M, 1, from_mag_pruned, args_unstructured[i], nr_steps=nr_steps, X=X, p=p)
         for i in range(len(args_unstructured))
     ]
-    mag_prune = add_label("mag_pruned", mag_prune)
+    mag_prune = add_label("Unstructured, magnitude-pruned", mag_prune)
     
     
     # lowrank = [
@@ -183,7 +183,7 @@ def collect256(M, nr_runs, nr_steps, p=4):
     # lowrank = add_label("lowrank", lowrank)
     
     svd = torch.linalg.svdvals(M)
-    lowrank_opt = [("lowrank_opt", svd[rank].item(), nr_parameters(LowRank(size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
+    lowrank_opt = [("LowRank", svd[rank].item(), nr_parameters(LowRank(size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
     
     # lowranklight_opt = [("lowrank_light_opt", svd[rank].item(), 2*size*rank - rank*rank + size) for rank in args_lowrank_light]
     
@@ -230,7 +230,7 @@ def collect256(M, nr_runs, nr_steps, p=4):
         project(M, 1, lrl_projected, args_lowrank_light[i], nr_steps=0, X=X, p=p)
         for i in range(len(args_lowrank_light))
     ]
-    lowrank_light_projected = add_label("lowrank_light_projected", lowrank_light_projected)
+    lowrank_light_projected = add_label("LowRankLight", lowrank_light_projected)
     
     
 
@@ -241,7 +241,7 @@ def collect256(M, nr_runs, nr_steps, p=4):
         project(M, 1, btt_projected, *(args_btt[i]), nr_steps=0, X=X, p=p)
         for i in range(len(args_btt))
     ]
-    btt_opt = add_label("btt_opt", btt_opt)
+    btt_opt = add_label("BTT", btt_opt)
 
 
     
@@ -272,7 +272,7 @@ def collect256(M, nr_runs, nr_steps, p=4):
     # ]
     # btt2 = add_label("btt-4cores", btt2)
     
-    save_results("p256", ["layer", "op_norm", "nr_parameters"], [dense], unstructured, mag_prune, blocks, block_mag_prune, lowrank_opt, btt_opt, lowrank_light_projected, bttlight)
+    save_results("p256", ["layer", "op_norm", "nr_parameters"], [dense], mag_prune, lowrank_opt, btt_opt, lowrank_light_projected, bttlight)
     
 
 
