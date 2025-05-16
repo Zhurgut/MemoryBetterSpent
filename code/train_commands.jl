@@ -1,6 +1,14 @@
 
 
 
+begin 
+    id = 0
+    # collect_measurements(dense, 1024, 4, 1e-4, 1000, 50, 1, id=id)
+    collect_measurements(vit_dense, 8*128, 6, 5e-4, 128, 30, 1, (patch_size=4, nr_heads=8),  max_bs=500, weight_decay=0.01, id=id)
+end
+
+
+
 begin
     id = 9
     # collect_measurements(dense, 1024, 4, 4e-4, 500, 3, id=9)

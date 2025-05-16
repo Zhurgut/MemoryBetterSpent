@@ -6,7 +6,6 @@ from math import sqrt
 
 from latin_squares import latin_square
 
-from ViT import *
 import lowrankLight
 
 
@@ -58,6 +57,19 @@ def to_dense(fn):
         return W, b, construct_linear(W.T, b)
     else:
         print("hello there...")
+
+
+
+
+
+class SkipConnection(nn.Module):
+    
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+    
+    def forward(self, x):
+        return x + self.fn(x)
 
 
 

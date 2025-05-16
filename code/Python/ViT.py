@@ -1,20 +1,13 @@
 import torch
 import torch.nn as nn
 
+import layers
 
-class SkipConnection(nn.Module):
-    
-    def __init__(self, fn):
-        super().__init__()
-        self.fn = fn
-    
-    def forward(self, x):
-        return x + self.fn(x)
+
 
 
 def Patchify(patch_size):
     return nn.Unfold((patch_size, patch_size), stride=patch_size)   
-
 
 
 class Embedding(nn.Module):
@@ -93,25 +86,60 @@ class ClassificationHead(nn.Module):
 
 
 
-        
 
-def TransformerBlock(embed_dim, nr_heads, layer_fn, *args):
+
+
+def TransformerBlock(embed_dim, nr_heads, layer_fn, *args, p=0.2):
+
+    def mlp(embed_dim, layer_fn, *args):
+        k = 4
+        return layers.SkipConnection(
+            nn.Sequential(
+                nn.LayerNorm(embed_dim), 
+                layer_fn(embed_dim, k * embed_dim, *args),
+                # nn.GELU(),
+                nn.ReLU(),
+                nn.Dropout(p=p),
+                layer_fn(k * embed_dim, embed_dim, *args),
+                # nn.Dropout(p=p),
+            )
+        )
+
     return nn.Sequential(
-        SkipConnection(
+        layers.SkipConnection(
             nn.Sequential(
                 nn.LayerNorm(embed_dim), 
                 MultiHeadAttention(embed_dim, nr_heads, layer_fn, *args)
             )
         ),
-        SkipConnection(
+        mlp(embed_dim, layer_fn, *args, p=p)
+    )
+
+
+
+
+
+def TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args, p=0.2):
+    
+    def mlp_noIB(embed_dim, layer_fn, *args):
+        return layers.SkipConnection(
             nn.Sequential(
                 nn.LayerNorm(embed_dim), 
-                layer_fn(embed_dim, *args),
+                layer_fn(embed_dim, embed_dim, *args),
                 # nn.GELU(),
                 nn.ReLU(),
-                nn.Dropout(p=0.2),
-                layer_fn(embed_dim, *args),
-                nn.Dropout(p=0.2),
+                nn.Dropout(p=p),
+                layer_fn(embed_dim, embed_dim, *args),
+                # nn.Dropout(p=p),
             )
         )
+    
+    return nn.Sequential(
+        layers.SkipConnection(
+            nn.Sequential(
+                nn.LayerNorm(embed_dim), 
+                MultiHeadAttention(embed_dim, nr_heads, layer_fn, *args)
+            )
+        ),
+        mlp_noIB(embed_dim, layer_fn, *args, p=p)
     )

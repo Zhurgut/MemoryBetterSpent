@@ -1,7 +1,10 @@
 import torch
 from torch import nn
 from train import train
+
 import layers
+import models
+import datasets
 
 import argparse
 import json
@@ -17,64 +20,6 @@ def nr_parameters(model):
 
 
 
-
-def VisionTransformer(embed_dim, patch_size, nr_transformer_blocks, nr_heads, nr_classes, layer_fn, *args):
-    nr_patches = int(32*32 / (patch_size * patch_size))
-    
-    return nn.Sequential(
-        layers.Patchify(patch_size),
-        layers.Embedding(embed_dim),
-        layers.PosEncoding(embed_dim, nr_patches),
-        *(layers.TransformerBlock(embed_dim, nr_heads, layer_fn, *args) for _ in range(nr_transformer_blocks)),
-        layers.ClassificationHead(nr_classes)
-    )
-    
-    
-
-def create_model(nr_blocks, width, layer_fn, *args):
-    # def Block():
-    #     return SkipConnection(nn.Sequential(
-    #         nn.LayerNorm((width,)), 
-    #         # layer_fn(width, *args), 
-    #         nn.Linear(width, width),
-    #         nn.ReLU(),
-    #         # layer_fn(width, *args), 
-    #         nn.Linear(width, width)
-    #     ))
-    def Block():
-        return nn.Sequential(
-            nn.LayerNorm((width,)),
-            layer_fn(width, *args), 
-            nn.ReLU()
-        )
-    
-    encoder = nn.Sequential(
-        nn.Flatten(), 
-        nn.LazyLinear(width), 
-        nn.ReLU()
-         
-        # nn.Conv2d(3, 32, (4, 4), padding=1, stride=2), 
-        # nn.MaxPool2d((2, 2)),
-        # nn.ReLU(), 
-        # nn.Conv2d(32, 32, (4, 4), padding=1, stride=2), 
-        # # nn.MaxPool2d((2, 2)),
-        
-        # nn.ReLU(), 
-        # # nn.Conv2d(32, 32, (3, 3)),
-        # # nn.ReLU(),
-        # # nn.Conv2d(32, 32, (3, 3)),
-        # # nn.MaxPool2d((2, 2))
-    )
-    model = nn.Sequential(
-        encoder, 
-        *[Block() for b in range(nr_blocks)], 
-        nn.Linear(width, 10)
-    )
-    model(torch.rand(2, 3, 32, 32)) # dummy input to initialize the lazy layer(s), make sure everything works
-    
-    return model
-
-
 LAYERS = {
     "dense": layers.Dense,
     "lowrank": layers.LowRank,
@@ -84,14 +29,21 @@ LAYERS = {
     "kronecker": layers.Kronecker,
     "tt": layers.TT,
     "btt": layers.BTT,
-    "vit_dense": layers.Dense,
-    "vit_lowrank": layers.LowRank,
-    "vit_lowranklight": layers.LowRankLight,
-    "vit_monarch": layers.Monarch,
-    "vit_kron": layers.Kronecker,
-    "vit_kronecker": layers.Kronecker,
-    "vit_tt": layers.TT,
-    "vit_btt": layers.BTT,
+}
+
+
+# + variants only work with sparse layers that support non-square dimensions
+MODELS = {
+    "mlp": models.MLP_DE,
+    "mlp+": models.MLP,
+    "b-mlp": models.B_MLP_noIB,
+    "b-mlp+": models.B_MLP,
+    "vit": models.VisionTransformer_noIB,
+    "vit+": models.VisionTransformer
+}
+
+DATASETS = {
+    "cifar10": datasets.cifar10
 }
     
 
