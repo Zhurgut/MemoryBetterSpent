@@ -54,9 +54,9 @@ class MultiHeadAttention(nn.Module):
         
         self.nr_heads = nr_heads
         
-        self.Q = layer_fn(embed_dim, *args)
-        self.K = layer_fn(embed_dim, *args)
-        self.V = layer_fn(embed_dim, *args)
+        self.Q = layer_fn(embed_dim, embed_dim, *args)
+        self.K = layer_fn(embed_dim, embed_dim, *args)
+        self.V = layer_fn(embed_dim, embed_dim, *args)
         
     
     def forward(self, x):
@@ -91,7 +91,7 @@ class ClassificationHead(nn.Module):
 
 def TransformerBlock(embed_dim, nr_heads, layer_fn, *args, p=0.2):
 
-    def mlp(embed_dim, layer_fn, *args):
+    def mlp(embed_dim, layer_fn, *args, p):
         k = 4
         return layers.SkipConnection(
             nn.Sequential(
@@ -121,7 +121,7 @@ def TransformerBlock(embed_dim, nr_heads, layer_fn, *args, p=0.2):
 
 def TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args, p=0.2):
     
-    def mlp_noIB(embed_dim, layer_fn, *args):
+    def mlp_noIB(embed_dim, layer_fn, *args, p):
         return layers.SkipConnection(
             nn.Sequential(
                 nn.LayerNorm(embed_dim), 

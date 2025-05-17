@@ -20,43 +20,43 @@ def set_scale(s):
 # size always the first parameter
 
 
-def to_dense(fn):
+# def to_dense(fn):
     
-    def construct_linear(W, b):
-        out_d, in_d = W.shape
-        f = nn.Linear(in_d, out_d)
-        with torch.no_grad():
-            f.weight = nn.Parameter(W)
-            f.bias   = nn.Parameter(b)
-        return f
-    if isinstance(fn, BlockDiagonal):
-        W = fn.to_matrix()
-        b = fn.bias if fn.use_bias else torch.zeros(W.shape[0])
-        return W, b, construct_linear(W.T, b)
-    if isinstance(fn, nn.Linear):
-        return fn.weight.T, fn.bias, fn
-    elif isinstance(fn, LowRank):
-        W1 = fn.fn[0].weight
-        W2 = fn.fn[1].weight
-        W = W2 @ W1
-        b  = fn.bias
-        return W.T, b, construct_linear(W, b)
-    elif isinstance(fn, Monarch):
-        W = fn.fn[0].to_matrix()
-        W = fn.fn[1](W)
-        W2 = fn.fn[2].to_matrix()
-        b = fn.bias
+#     def construct_linear(W, b):
+#         out_d, in_d = W.shape
+#         f = nn.Linear(in_d, out_d)
+#         with torch.no_grad():
+#             f.weight = nn.Parameter(W)
+#             f.bias   = nn.Parameter(b)
+#         return f
+#     if isinstance(fn, BlockDiagonal):
+#         W = fn.to_matrix()
+#         b = fn.bias if fn.use_bias else torch.zeros(W.shape[0])
+#         return W, b, construct_linear(W.T, b)
+#     if isinstance(fn, nn.Linear):
+#         return fn.weight.T, fn.bias, fn
+#     elif isinstance(fn, LowRank):
+#         W1 = fn.fn[0].weight
+#         W2 = fn.fn[1].weight
+#         W = W2 @ W1
+#         b  = fn.bias
+#         return W.T, b, construct_linear(W, b)
+#     elif isinstance(fn, Monarch):
+#         W = fn.fn[0].to_matrix()
+#         W = fn.fn[1](W)
+#         W2 = fn.fn[2].to_matrix()
+#         b = fn.bias
 
-        W = W @ W2
+#         W = W @ W2
         
-        W = fn.fn[3](W)
-        return W, b, construct_linear(W.T, b)
-    elif isinstance(fn, TT) or isinstance(fn, BTT):
-        W = fn.to_matrix()
-        b = fn.bias
-        return W, b, construct_linear(W.T, b)
-    else:
-        print("hello there...")
+#         W = fn.fn[3](W)
+#         return W, b, construct_linear(W.T, b)
+#     elif isinstance(fn, TT) or isinstance(fn, BTT):
+#         W = fn.to_matrix()
+#         b = fn.bias
+#         return W, b, construct_linear(W.T, b)
+#     else:
+#         print("hello there...")
 
 
 
@@ -73,8 +73,8 @@ class SkipConnection(nn.Module):
 
 
 
-def Dense(size):
-    return nn.Linear(size, size)
+def Dense(in_dim, out_dim):
+    return nn.Linear(in_dim, out_dim)
 
 
 class MaskedSparse(nn.Module):
@@ -111,7 +111,9 @@ class MaskedSparse(nn.Module):
 
 class Unstructured(MaskedSparse):
     
-    def __init__(self, size, sparsity):
+    def __init__(self, size, size2, sparsity):
+
+        assert size == size2
         
         m = torch.rand(size, size)
         t = torch.sort(m.flatten(), descending=True)[0][(sparsity * torch.ones(1) * size*size).floor().int()]
@@ -138,7 +140,9 @@ class Unstructured(MaskedSparse):
 
 class BlockSparse(MaskedSparse):
         
-    def __init__(self, size, nr_blocks_per_row, nr_blocks_to_drop_per_row):
+    def __init__(self, size, size2, nr_blocks_per_row, nr_blocks_to_drop_per_row):
+
+        assert size == size2
             
         S = latin_square(nr_blocks_per_row)
         block_size = size // nr_blocks_per_row
@@ -172,24 +176,27 @@ class BlockSparse(MaskedSparse):
 
 class LowRank(nn.Module):
     
-    def __init__(self, size, rank):
+    def __init__(self, in_dim, out_dim, rank):
         super().__init__()
+
+        l = nn.Linear(in_dim, out_dim)
+
+        U, S, Vt = torch.linalg.svd(l.weight)
+        s = torch.diag(S).sqrt()[:rank, :rank]
+
+        self.A = nn.Parameter(U[:, :rank] @ s)
+        self.B = nn.Parameter(s @ Vt[:rank, :])
         
-        self.fn = nn.Sequential(nn.Linear(size, rank, bias=False), nn.Linear(rank, size, bias=False))
-    
-        
-        b = torch.zeros(size)
-        nn.init.uniform_(b, -1, 1)
-        self.bias   = nn.Parameter(np.sqrt(1/size) * b)
+        self.bias = nn.Parameter(l.bias)
     
     def forward(self, x):
-        return self.fn(x) + self.bias
+        return (x @ self.B.T) @ self.A.T + self.bias
 
 
-def LowRankLight(size, rank):
-    return lowrankLight.LowRankLight(size, size, rank)
+def LowRankLight(in_dim, out_dim, rank):
+    return lowrankLight.LowRankLight(in_dim, out_dim, rank)
 
-LowRankLight.from_matrix = lowrankLight.LowRankLight.from_matrix  
+LowRankLight.from_matrix = lowrankLight.LowRankLight.from_matrix  # ok...
 
 
 class BlockDiagonal(nn.Module):
@@ -262,9 +269,11 @@ class Permute(nn.Module):
 
 class Monarch(nn.Module):
     
-    def __init__(self, size, nr_blocks):
+    def __init__(self, size, size2, nr_blocks):
         super().__init__()
         self.size = size
+
+        assert size == size2
         
         self.fn = nn.Sequential(
             BlockDiagonal(size, nr_blocks, bias=False), 
@@ -286,8 +295,10 @@ class Monarch(nn.Module):
 
 class TT(nn.Module):
         
-    def __init__(self, size, nr_cores, rank):
+    def __init__(self, size, size2, nr_cores, rank):
         super().__init__()
+
+        assert size == size2
         
         self.core_size = int(round(size**(1/nr_cores)))
         
@@ -351,8 +362,10 @@ def Kronecker(size):
 
 class BTT(nn.Module):
     
-    def __init__(self, size, nr_cores, rank):
+    def __init__(self, size, size2, nr_cores, rank):
         super().__init__()
+
+        assert size == size2
         
         self.core_size = int(round(size**(1/nr_cores)))
         
@@ -463,28 +476,28 @@ class BTT(nn.Module):
 
 
 
-class BTTLight(nn.Module):
+# class BTTLight(nn.Module):
     
-    def __init__(self, size, rank): # nr cores = 2
-        super().__init__()
+#     def __init__(self, size, rank): # nr cores = 2
+#         super().__init__()
         
-        self.size = size
+#         self.size = size
 
-        self.core_size = int(round(sqrt(size)))
-        assert self.core_size * self.core_size == size
+#         self.core_size = int(round(sqrt(size)))
+#         assert self.core_size * self.core_size == size
         
-        self.nr_blocks = size
+#         self.nr_blocks = size
 
-        self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, self.core_size, rank)))
-        self.B = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, rank, self.core_size - rank)))  
+#         self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, self.core_size, rank)))
+#         self.B = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, rank, self.core_size - rank)))  
 
-        b = torch.zeros(size)
-        nn.init.uniform_(b, -1, 1)
-        self.bias = nn.Parameter(np.sqrt(1/size) * b)
+#         b = torch.zeros(size)
+#         nn.init.uniform_(b, -1, 1)
+#         self.bias = nn.Parameter(np.sqrt(1/size) * b)
     
     
-    def forward(self, x):
-        AB = torch.bmm(self.A, self.B) # nr_blocks, core_size, core_size - rank
-        W = torch.cat((self.A, AB), dim = 2).reshape(self.size, self.size)
+#     def forward(self, x):
+#         AB = torch.bmm(self.A, self.B) # nr_blocks, core_size, core_size - rank
+#         W = torch.cat((self.A, AB), dim = 2).reshape(self.size, self.size)
         
-        return x @ W.T + self.bias
+#         return x @ W.T + self.bias

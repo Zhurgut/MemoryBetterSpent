@@ -9,9 +9,13 @@ from torcheval.metrics.functional import multiclass_accuracy as accuracy
 
 import numpy as np
 
+"""
+the provided metric function needs to be some kind of score, I mean something that's increasing...
+"""
 
 
-def cifar10(max_batch_size):
+
+def cifar10(training_batch_size, max_batch_size):
 
     # for model evaluation, load the unaugmented dataset
 
@@ -53,10 +57,10 @@ def cifar10(max_batch_size):
 
 
 
-    # function that returns a datset to be used for training in the next epoch
+    # function that returns a dataset to be used for training in the next epoch
 
-    def training_loader(batch_size):
-        torch.utils.data.DataLoader(training_datasets[np.random.randint(0, len(training_datasets))], batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
+    def training_loader():
+        return torch.utils.data.DataLoader(training_datasets[np.random.randint(0, len(training_datasets))], batch_size=training_batch_size, shuffle=True, num_workers=0, pin_memory=True)
 
 
 
@@ -64,7 +68,7 @@ def cifar10(max_batch_size):
     in_dim, out_dim = 32*32*3, 10
     
     return (
-        # dimensions a model needs to have
+        # input and output dimensions of the model
         in_dim, out_dim,
         
         # evaluation data

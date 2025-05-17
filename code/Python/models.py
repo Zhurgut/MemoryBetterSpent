@@ -103,7 +103,7 @@ def B_MLP_noIB(in_dim, nr_blocks, width, out_dim, layer_fn, *args, p=0.2):
 
     model = nn.Sequential(
         nn.Flatten(),
-        nn.Linear(in_dim, width, *args),
+        nn.Linear(in_dim, width),
         nn.ReLU(),
         nn.Dropout(p=p),
         *[Block() for i in range(nr_blocks)],
@@ -117,15 +117,15 @@ def B_MLP_noIB(in_dim, nr_blocks, width, out_dim, layer_fn, *args, p=0.2):
 """
 ViT without inverse bottleneck (IB), instead use square layers
 """
-def VisionTransformer_noIB(embed_dim, patch_size, nr_transformer_blocks, nr_heads, nr_classes, layer_fn, *args):
+def VisionTransformer_noIB(embed_dim, patch_size, nr_transformer_blocks, nr_heads, nr_classes, layer_fn, *args, p=0.2):
     nr_patches = int(32*32 / (patch_size * patch_size))
     
     return nn.Sequential(
-        layers.Patchify(patch_size),
-        layers.Embedding(embed_dim),
-        layers.PosEncoding(embed_dim, nr_patches),
-        *(layers.TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args) for _ in range(nr_transformer_blocks)),
-        layers.ClassificationHead(nr_classes)
+        ViT.Patchify(patch_size),
+        ViT.Embedding(embed_dim),
+        ViT.PosEncoding(embed_dim, nr_patches),
+        *(ViT.TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args, p=p) for _ in range(nr_transformer_blocks)),
+        ViT.ClassificationHead(nr_classes)
     )
 
 
@@ -133,13 +133,13 @@ def VisionTransformer_noIB(embed_dim, patch_size, nr_transformer_blocks, nr_head
 """
 a more standart Vision Transformer
 """
-def VisionTransformer(embed_dim, patch_size, nr_transformer_blocks, nr_heads, nr_classes, layer_fn, *args):
+def VisionTransformer(embed_dim, patch_size, nr_transformer_blocks, nr_heads, nr_classes, layer_fn, *args, p=0.2):
     nr_patches = int(32*32 / (patch_size * patch_size))
     
     return nn.Sequential(
-        layers.Patchify(patch_size),
-        layers.Embedding(embed_dim),
-        layers.PosEncoding(embed_dim, nr_patches),
-        *(layers.TransformerBlock(embed_dim, nr_heads, layer_fn, *args) for _ in range(nr_transformer_blocks)),
-        layers.ClassificationHead(nr_classes)
+        ViT.Patchify(patch_size),
+        ViT.Embedding(embed_dim),
+        ViT.PosEncoding(embed_dim, nr_patches),
+        *(ViT.TransformerBlock(embed_dim, nr_heads, layer_fn, *args, p=p) for _ in range(nr_transformer_blocks)),
+        ViT.ClassificationHead(nr_classes)
     )
