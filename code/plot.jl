@@ -37,6 +37,30 @@ function sparsity(layer::Layer, width, kwargs)
 
 end
 
+
+function plot_the_stuff(ids)
+    # every id should include only one layer, model type and dataset, and depth. every id will give one series in the plot
+    dfs = [load_measurements_info(id) for id in ids]
+    for df in dfs
+        @assert all(
+            [row == df[1, [:layer, :model, :dataset, :depth]] for row in eachrow( df[:, [:layer, :model, :dataset, :depth]] )]
+        )
+    end
+    series = [
+        (df[1, :layer], df[1, :depth], df[end, :kwargs], df[end, :width], combine(groupby(df, :nr_parameters), :best_test => maximum)) for df in dfs
+    ]
+
+    Ps = [plot(title="depth=$i", ylims=(0.7, 1.0), xlims=(0,1000)) for i=0:2]
+    for s in series 
+        layer, d, kwargs, w, df = s
+        plot!(Ps[d+1], df.nr_parameters, df.best_test_maximum, label="$layer $(kwargs==NamedTuple() ? "" : round(100*kwargs.rank/w))")
+
+    end
+
+    for P in Ps display(P) end
+end
+
+
 function make_label(df_row, arch=false)
     io = IOBuffer()
     cols = names(df_row)
@@ -349,7 +373,7 @@ function plot_best(ids, width, depth, against_sparsity=false, range=1.1, same_de
     end 
     display(P)
 
-    P = plot(xlabel=xlabel, ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
+    P = plot(xlabel=xlabel, ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800), ylims=(0,1))
     it = 1
     for t in test
         for (ir, r) in enumerate(eachrow(t))

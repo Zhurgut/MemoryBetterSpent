@@ -6,10 +6,14 @@ using Statistics: mean
 
 const ROOT_DIR = joinpath(@__DIR__, "..")
 
-@enum Layer dense lowrank lowranklight monarch kronecker tt btt vit_dense vit_lowrank vit_lowranklight vit_monarch vit_kronecker vit_tt vit_btt
+@enum Layer dense lowrank lowranklight monarch kronecker tt btt
+@enum Model mlp mlp2 b_mlp b_mlp2 vit vit2 
+@enum Dataset simple cifar10 tiny_imagenet
 
 struct Measurements
     layers::Vector{Tuple{Layer, NamedTuple}}
+    models::Vector{Model}
+    dataset::Dataset
 
     width::Vector{Int}
     depth::Vector{Int}
@@ -17,10 +21,14 @@ struct Measurements
     lr::Vector{Float64}
     bs::Vector{Int}
 
-    init_scale::Vector{Float64}
-
-    max_epochs::Int
+    max_epochs::Vector{Int}
     weight_decay::Vector{Float64}
+
+    lr_decay::Bool
+    early_stopping::Bool
+
+    init_scale::Vector{Float64}
+    dropout::Vector{Float64}
 
     max_bs::Int
     
@@ -36,7 +44,13 @@ include("utils.jl")
 
 
 
-function train(layer::Layer, width::Int, depth::Int, lr::Float64, bs::Int, max_epochs::Int, weight_decay::Float64=0.0, init_scale=1.0, max_bs=50000; kwargs...)
+function train(
+        layer::Layer, model::Model, dataset::Dataset, 
+        width::Int, depth::Int, 
+        lr::Float64, bs::Int, max_epochs::Int, weight_decay::Float64,
+        lr_decay::Bool, early_stopping::Bool, 
+        init_scale::Float64, max_bs::Int, dropout::Float64
+        ; kwargs...)
     WD = pwd()
     cd(joinpath(@__DIR__, "Python"))
 
@@ -45,9 +59,9 @@ function train(layer::Layer, width::Int, depth::Int, lr::Float64, bs::Int, max_e
     params = to_string(;kwargs...)
 
     if params |> isnothing
-        cmd = `python main.py -l $(layer) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay -s $init_scale --max_bs $max_bs`
+        cmd = `python main.py -l $(layer) -m $(model) -ds $(dataset) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay --lr_decay $(lr_decay) --early_stopping $(early_stopping) -s $init_scale --dropout $(dropout) --max_bs $max_bs`
     else
-        cmd = `python main.py -l $(layer) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay -s $init_scale --max_bs $max_bs -p $params`
+        cmd = `python main.py -l $(layer) -m $(model) -ds $(dataset) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay --lr_decay $(lr_decay) --early_stopping $(early_stopping) -s $init_scale --dropout $(dropout) --max_bs $max_bs -p $params`
     end
 
     println(cmd)
@@ -57,12 +71,20 @@ function train(layer::Layer, width::Int, depth::Int, lr::Float64, bs::Int, max_e
         output = read(cmd, String)
     catch e 
         cd(WD)
-        println("probably out of gpu memory...")
+        println("something went wrong during training, sorry :(")
         rethrow(e)
     end
     # println(output)
 
-    data = JSON3.read(output)
+    local data
+    try
+        data = JSON3.read(output)
+    catch e
+        cd(WD)
+        println("couldnt read json")
+        println(output)
+        rethrow(e)
+    end
 
     cd(WD)
 
@@ -70,31 +92,88 @@ function train(layer::Layer, width::Int, depth::Int, lr::Float64, bs::Int, max_e
 end
 
 
+function collect_measurements(;
+        layer=dense,
+        model=mlp,
+        dataset=cifar10,
+        width=1024,
+        depth=4,
+        lr=1e-4,
+        bs=1000,
+        max_epochs=500,
+        weight_decay=0.0,
+        lr_decay=true,
+        early_stopping=true,
+        init_scale=1.0,
+        dropout=0.2,
+        nr_runs=1,
+        max_bs=50000,
+        id=nothing,
+        kwargs... 
+    )
+
+    if isnothing(id)
+        if !isdir(joinpath(ROOT_DIR, "measurements"))
+            mkdir(joinpath(ROOT_DIR, "measurements"))
+        end
+        
+        ids = parse.(Int, cd(readdir, joinpath(ROOT_DIR, "measurements")))
+        if length(ids) == 0
+            id = 0
+        else
+            id = maximum(ids) + 1
+        end
+    end
+
+    collect_measurements(
+        layer, model, dataset,
+        width, depth,
+        lr, bs, max_epochs, weight_decay,
+        lr_decay, early_stopping,
+        init_scale,
+        dropout,
+        nr_runs,
+        max_bs,
+        NamedTuple{keys(kwargs)}(values(kwargs)),
+        id=id
+    )
+end
+
 
 function collect_measurements(
         layer::Union{Layer, Vector{Layer}}, 
+        model::Union{Model, Vector{Model}},
+        dataset::Dataset,
         width::Union{Int, Vector{Int}}, 
         depth::Union{Int, Vector{Int}}, 
         lr::Union{Float64, Vector{Float64}}, 
         bs::Union{Int, Vector{Int}}, 
-        max_epochs::Int, 
+        max_epochs::Union{Int, Vector{Int}}, 
+        weight_decay::Union{Float64, Vector{Float64}},
+        lr_decay::Bool,
+        early_stopping::Bool,
+        init_scale::Union{Float64, Vector{Float64}},
+        dropout::Union{Float64, Vector{Float64}},
         nr_runs::Int, # how many runs to average over
+        max_bs::Int,
         kwargs::Union{NamedTuple, Vector{T}} = NamedTuple();
-        weight_decay::Union{Float64, Vector{Float64}}=0.0,
-        init_scale::Union{Float64, Vector{Float64}}=1.0,
-        max_bs::Int=50000,
-        id=nothing # associate measurements with some id that already exists
+        id::Union{Int, Nothing}=nothing # associate measurements with some id that maybe already exists
     ) where T <: NamedTuple
-
-
 
     vec(x) = x isa Vector ? x : [x]
 
+    @assert length(vec(layer)) == length(vec(kwargs))
+
     collect_measurements(Measurements(
-        collect(zip(vec(layer), vec(kwargs))), # layers and kwargs need to have the same lengths
+        collect(zip(vec(layer), vec(kwargs))), 
+        vec(model),
+        dataset,
         vec(width), vec(depth), 
-        vec(lr), vec(bs), vec(init_scale),
-        max_epochs, vec(weight_decay), max_bs, nr_runs
+        vec(lr), vec(bs), 
+        vec(max_epochs), vec(weight_decay), 
+        lr_decay, early_stopping,
+        vec(init_scale), vec(dropout), 
+        max_bs, nr_runs
     ), id)
 
 end
@@ -144,9 +223,8 @@ end
 
 function save_results(path, data, run)
     N = data.nr_epochs
-    times = collect(LinRange(0, data.time, N+1))[2:end]
     out = DataFrame(
-        [fill(run, N), data.train_losses, data.test_losses, data.train_accuracies, data.test_accuracies, times], 
+        [fill(run, N), data.train_losses, data.test_losses, data.train_accuracies, data.test_accuracies, data.time], 
         [:run_id, :train_loss, :test_loss, :train_acc, :test_acc, :time]
     )
 
@@ -201,39 +279,58 @@ function collect_measurements(df, id)
 
     if !isdir("data") mkdir("data") end
 
-    # then work through all the train commands we have to do, and store measurements in data folder
-    current_row_idx = 1
-    while current_row_idx <= size(df, 1)
+    # work through all the train commands we have to do, and store measurements in data folder
+    current_measurement_id = 1
+    while current_measurement_id <= size(df, 1)
         
-        if df.done[current_row_idx] 
-            current_row_idx += 1
+        if df.done[current_measurement_id] 
+            current_measurement_id += 1
             continue 
         end
         
-        row = df.row[current_row_idx]
+        measurement_id = df.measurement_id[current_measurement_id]
+        @assert measurement_id == current_measurement_id # should be the same thing?
         
         try
             run = 1
-            if isfile("data/$row.csv")
-                results = CSV.read("data/$row.csv", DataFrame)
+
+            if isfile("data/$measurement_id.csv")
+                results = CSV.read("data/$measurement_id.csv", DataFrame)
                 run = maximum(results.run_id) + 1
             end
 
-            while run <= df.nr_runs[row]
+            df_row = df[measurement_id, :]
+
+            while run <= df.nr_runs[measurement_id]
 
                 # do the training
-                data = train(df.layer[row], df.width[row], df.depth[row], df.lr[row], df.bs[row], df.max_epochs[row], df.wdecay[row], df.init_scale[row], df.max_bs[row]; df.kwargs[row]...)
+                data = train(
+                    df_row.layer, 
+                    df_row.model, 
+                    df_row.dataset,
+                    df_row.width, 
+                    df_row.depth, 
+                    df_row.lr, 
+                    df_row.bs, 
+                    df_row.max_epochs, 
+                    df_row.wdecay, 
+                    df_row.lr_decay, 
+                    df_row.early_stop,
+                    df_row.init_scale, 
+                    df_row.max_bs, 
+                    df_row.dropout
+                    ;df_row.kwargs...)
 
-                save_results("data/$row.csv", data, run)
+                save_results("data/$measurement_id.csv", data, run)
 
-                update_measurements_info!(df, row, data.nr_parameters)
+                update_measurements_info!(df, measurement_id, data.nr_parameters)
 
                 CSV.write("measurements_info.csv", df)
 
                 run += 1
             end
 
-            df.done[row] = true
+            df.done[measurement_id] = true
 
             CSV.write("measurements_info.csv", df)
 
@@ -243,21 +340,21 @@ function collect_measurements(df, id)
                 cd(WD)
                 rethrow(e)
             else
-                println("failed to collect measurements for:\n", df[current_row_idx, :])
+                println("failed to collect measurements for:\n", df[current_measurement_id, :])
                 println(e)
                 # continue to next one
                 
                 # rethrow(e)
             end
         end
-        current_row_idx += 1
+        current_measurement_id += 1
     end
 
     cd(WD)
 end
 
-# when there was some issue, or out of time or whatever, can just continue on from where we left off
-function resume_collecting(id)
-    df = load_measurements_info(id)
-    collect_measurements(df, id)
-end
+# # when there was some issue, or out of time or whatever, can just continue on from where we left off
+# function resume_collecting(id)
+#     df = load_measurements_info(id)
+#     collect_measurements(df, id)
+# end

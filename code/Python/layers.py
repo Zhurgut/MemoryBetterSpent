@@ -1,6 +1,7 @@
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 import numpy as np
 from math import sqrt
 
@@ -64,12 +65,20 @@ def set_scale(s):
 
 class SkipConnection(nn.Module):
     
-    def __init__(self, fn):
+    def __init__(self, fn, drop_rate=0.0):
         super().__init__()
         self.fn = fn
+        self.drop_rate = drop_rate
     
     def forward(self, x):
-        return x + self.fn(x)
+        if self.training and torch.rand(()).item() < self.drop_rate:
+            return x
+        
+        if self.drop_rate == 0.0:
+            return x + self.fn(x)
+        
+        return x + (1/(1-self.drop_rate)) * self.fn(x)
+
 
 
 
@@ -178,6 +187,17 @@ class LowRank(nn.Module):
     
     def __init__(self, in_dim, out_dim, rank):
         super().__init__()
+
+        # bound = 1 / sqrt(in_dim)
+        # self.A = nn.Parameter(nn.init.uniform_(torch.empty(out_dim, rank), a=-bound, b=bound))
+        
+        # b = F.normalize(nn.init.normal_(torch.empty(rank, in_dim)), p=2, dim=0)
+
+        # self.B = nn.Parameter(b * 0.5*bound / (bound / sqrt(3))) 
+        
+        # self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
+
+
 
         l = nn.Linear(in_dim, out_dim)
 

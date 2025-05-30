@@ -4,7 +4,7 @@ from train import train
 
 import layers
 import models
-import datasets
+import dataset_loader
 
 import argparse
 import json
@@ -32,18 +32,20 @@ LAYERS = {
 }
 
 
-# + variants only work with sparse layers that support non-square dimensions
+# (2) variants only work with sparse layers that support non-square dimensions
 MODELS = {
     "mlp": models.MLP_DE,
-    "mlp+": models.MLP,
-    "b-mlp": models.B_MLP_noIB,
-    "b-mlp+": models.B_MLP,
+    "mlp2": models.MLP,
+    "b_mlp": models.B_MLP_noIB,
+    "b_mlp2": models.B_MLP,
     "vit": models.VisionTransformer_noIB,
-    "vit+": models.VisionTransformer
+    "vit2": models.VisionTransformer
 }
 
 DATASETS = {
-    "cifar10": datasets.cifar10
+    "cifar10": dataset_loader.cifar10,
+    "simple": dataset_loader.simple,
+    "tiny_imagenet": dataset_loader.tiny_imagenet
 }
     
 
@@ -92,7 +94,7 @@ def main():
     parser.add_argument("--max_bs", type=int, default=50000,
                         help="maximum batchsize the model can cope with for evaluating training and test accuracy. Must lower for ViT")
     
-    parser.add_argument("--dropout_p", type=float, default=0.2,
+    parser.add_argument("--dropout", type=float, default=0.2,
                         help="probability for dropout layers, default 0.2")
     
         
@@ -107,15 +109,15 @@ def main():
     layer_fn = LAYERS[args.layer]
     model_fn = MODELS[args.model]
     dataset = DATASETS[args.dataset](args.batch_size, args.max_bs)
-    in_dim, out_dim, _, _, _, _, _, _, _ = dataset
+    in_dim, out_dim, image_dim, _, _, _, _, _, _, _ = dataset
 
-    p = args.dropout_p
+    p = args.dropout
     
     
     params = {p.split("=")[0]: int(p.split("=")[1]) for p in args.params} if args.params else {}
     
     model = None
-    if args.model == "mlp" or args.model == "mlp+" or args.model == "b-mlp" or args.model == "b-mlp+":
+    if args.model == "mlp" or args.model == "mlp2" or args.model == "b_mlp" or args.model == "b_mlp2":
         
         if layer_fn is layers.LowRank or layer_fn is layers.LowRankLight:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["rank"], p=p)  
@@ -126,16 +128,16 @@ def main():
         else:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, p=p)
 
-    elif args.model == "vit" or args.model == "vit+":
+    elif args.model == "vit" or args.model == "vit2":
 
         if layer_fn is layers.LowRank or layer_fn is layers.LowRankLight:
-            model = model_fn(args.width, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["rank"], p=p)  
+            model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["rank"], dropout_p=p)  
         elif layer_fn is layers.Monarch:
-            model = model_fn(args.width, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_blocks"], p=p)
+            model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_blocks"], dropout_p=p)
         elif layer_fn is layers.TT or layer_fn is layers.BTT:
-            model = model_fn(args.width, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_cores"], params["rank"], p=p)
+            model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_cores"], params["rank"], dropout_p=p)
         else:
-            model = model_fn(args.width, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, p=p)
+            model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, dropout_p=p)
          
 
     training_losses, training_accuracies, test_losses, test_accuracies, times = train(

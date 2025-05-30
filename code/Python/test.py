@@ -1,51 +1,114 @@
 
-from main import VisionTransformer, nr_parameters
+from main import nr_parameters
+from models import VisionTransformer
 import torch
 import layers
 import gc
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def test_vit(embed_dim, patch_size, nr_blocks, nr_heads, layer_fn, *args):
-    model = VisionTransformer(embed_dim, patch_size, nr_blocks, nr_heads, 10, layer_fn, *args).to(device)
+# def test_vit(embed_dim, patch_size, nr_blocks, nr_heads, layer_fn, *args):
+#     model = VisionTransformer(embed_dim, patch_size, nr_blocks, nr_heads, 10, layer_fn, *args).to(device)
+#     print("patch-size: ", patch_size)
+    
+#     gc.collect()
+#     torch.cuda.empty_cache()
+#     model.train(False)
+#     bs = 64
+#     try:
+#         with torch.no_grad():
+#             while True:
+#                 x = torch.randn(bs, 3, 32, 32).to(device)
+#                 y = model(x)
+#                 bs += 64
+#     except:
+#         print("final eval size: ", bs)
+    
+#     gc.collect()
+#     torch.cuda.empty_cache()
+#     model.train(True)
+#     bs = 16
+#     try:
+#         while True:
+#             x = torch.randn(bs, 3, 32, 32).to(device)
+#             y = model(x)
+#             bs += 16
+#     except:
+#         print("final train size: ", bs)
+    
+#     print(nr_parameters(model), " parameters")
+
+
+def test_vit2(embed_dim, patch_size, nr_blocks, nr_heads, layer_fn, *args):
+    model = VisionTransformer(embed_dim, 64, patch_size, nr_blocks, nr_heads, 200, layer_fn, *args).to(device)
     print("patch-size: ", patch_size)
+
+    total_mem = torch.cuda.get_device_properties(device).total_memory
+    reserved = torch.cuda.memory_reserved(device)
+    free = total_mem - reserved
     
     gc.collect()
     torch.cuda.empty_cache()
     model.train(False)
     bs = 64
-    try:
-        with torch.no_grad():
-            while True:
-                x = torch.randn(bs, 3, 32, 32).to(device)
-                y = model(x)
-                bs += 64
-    except:
-        print("final eval size: ", bs)
+
+    with torch.no_grad():
+        while free > 1e9:
+            x = torch.randn(bs, 3, 64, 64).to(device)
+            y = model(x)
+            bs += 256
+
+            reserved = torch.cuda.memory_reserved(device)
+            free = total_mem - reserved
+
+            print(free / 1e9)
+
+            gc.collect()
+            torch.cuda.empty_cache()   
+
+    print("final eval size: ", bs)
     
     gc.collect()
     torch.cuda.empty_cache()
     model.train(True)
-    bs = 16
-    try:
-        while True:
-            x = torch.randn(bs, 3, 32, 32).to(device)
-            y = model(x)
-            bs += 16
-    except:
-        print("final train size: ", bs)
+
+    reserved = torch.cuda.memory_reserved(device)
+    free = total_mem - reserved
+    
+    bs = 4
+    while free > 1e9:
+        x = torch.randn(bs, 3, 64, 64).to(device)
+        y = model(x)
+        bs += 8
+
+        reserved = torch.cuda.memory_reserved(device)
+        free = total_mem - reserved
+
+        gc.collect()
+        torch.cuda.empty_cache()   
+
+
+    print("final train size: ", bs)
     
     print(nr_parameters(model), " parameters")
     
+# vit b/16
+nr_transformer_blocks = 12
+nr_heads = 12
+head_dim = 64
+# test_vit2(nr_heads * head_dim, 16,  nr_transformer_blocks, nr_heads, layers.Dense)
 
-nr_transformer_blocks = 6
-nr_heads = 8
-head_dim = 128
+# vit l/16
+nr_transformer_blocks = 24
+nr_heads = 16
+head_dim = 64
+test_vit2(nr_heads * head_dim, 16,  nr_transformer_blocks, nr_heads, layers.Dense)
 
 # test_vit(nr_heads * head_dim, 16, nr_transformer_blocks, nr_heads, layers.Dense)
 # test_vit(nr_heads * head_dim, 8,  nr_transformer_blocks, nr_heads, layers.Dense)
 # test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Dense)
-test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.LowRankLight, 73)
+# test_vit2(nr_heads * head_dim, 16,  nr_transformer_blocks, nr_heads, layers.LowRankLight, 73)
+# test_vit2(nr_heads * head_dim, 16,  nr_transformer_blocks, nr_heads, layers.Dense)
 # test_vit(nr_heads * head_dim, 2,  nr_transformer_blocks, nr_heads, layers.Dense)
 
 # test_vit(nr_heads * head_dim, 4,  nr_transformer_blocks, nr_heads, layers.Monarch, 4)

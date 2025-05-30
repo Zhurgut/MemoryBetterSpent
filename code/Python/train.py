@@ -8,7 +8,8 @@ import numpy as np
 import time
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda") # else ERROR
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 # print("using device: ", device)
 
@@ -67,7 +68,7 @@ def evaluate(model, train_batches, test_batches, train_labels, test_labels, loss
     
 def train(model, dataset, nr_epochs, lr, weight_decay, early_stopping, lr_decay):
 
-    _, _, train_batches, test_batches, train_labels, test_labels, training_loader_fn, loss_fn, metric_fn = dataset
+    _, _, _, train_batches, test_batches, train_labels, test_labels, training_loader_fn, loss_fn, metric_fn = dataset
 
     model = model.to(device)
     
@@ -81,7 +82,7 @@ def train(model, dataset, nr_epochs, lr, weight_decay, early_stopping, lr_decay)
 
     # early stopping criterium
     window_size = 100 # if no significant improvement over this many epochs
-    significant_improvement = 0.03 # improvement is significant if (new-old)/old > 0.03
+    significant_improvement = 0.01 # improvement is significant if (new-old)/old > 0.01
     
 
     training_losses = []
@@ -103,21 +104,27 @@ def train(model, dataset, nr_epochs, lr, weight_decay, early_stopping, lr_decay)
         test_losses.append(test_loss.item())
         test_accuracies.append(test_accuracy.item())
         times.append(time.time())
-    
+
+    #     print(training_losses, ", ", training_accuracies, ", ", test_losses, ", ", test_accuracies)
+
+    # print("rec", time.time())
 
     record_training_stats() # first entry before training
-
+    # print("*")
 
     for epoch in range(nr_epochs):
+        # print("training", time.time())
 
         train_epoch(model, opt, loss_fn, training_loader_fn)
+        # print("recording", time.time())
 
         record_training_stats()
-        
+        # print("*")
+
         # check for early stopping due to convergence
         if early_stopping and epoch > 2*window_size:
-            old = max(test_accuracies[:-window_size])
-            new = max(test_accuracies[-window_size:])
+            old = max(training_accuracies[:-window_size])
+            new = max(training_accuracies[-window_size:])
             if new/old - 1 < significant_improvement:
                 break
         

@@ -89,10 +89,10 @@ class ClassificationHead(nn.Module):
 
 
 
-def TransformerBlock(embed_dim, nr_heads, layer_fn, *args, p=0.2):
+def TransformerBlock(embed_dim, nr_heads, layer_fn, *args, dropout_p=0.2, drop_rate=0.0):
 
-    def mlp(embed_dim, layer_fn, *args, p):
-        k = 4
+    def mlp(embed_dim, layer_fn, *args, p=0.2):
+        k = 2
         return layers.SkipConnection(
             nn.Sequential(
                 nn.LayerNorm(embed_dim), 
@@ -102,7 +102,8 @@ def TransformerBlock(embed_dim, nr_heads, layer_fn, *args, p=0.2):
                 nn.Dropout(p=p),
                 layer_fn(k * embed_dim, embed_dim, *args),
                 # nn.Dropout(p=p),
-            )
+            ),
+            drop_rate
         )
 
     return nn.Sequential(
@@ -110,16 +111,17 @@ def TransformerBlock(embed_dim, nr_heads, layer_fn, *args, p=0.2):
             nn.Sequential(
                 nn.LayerNorm(embed_dim), 
                 MultiHeadAttention(embed_dim, nr_heads, layer_fn, *args)
-            )
+            ),
+            drop_rate
         ),
-        mlp(embed_dim, layer_fn, *args, p=p)
+        mlp(embed_dim, layer_fn, *args, p=dropout_p)
     )
 
 
 
 
 
-def TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args, p=0.2):
+def TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args, dropout_p=0.2, drop_rate=0.0):
     
     def mlp_noIB(embed_dim, layer_fn, *args, p):
         return layers.SkipConnection(
@@ -131,7 +133,8 @@ def TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args, p=0.2):
                 nn.Dropout(p=p),
                 layer_fn(embed_dim, embed_dim, *args),
                 # nn.Dropout(p=p),
-            )
+            ),
+            drop_rate
         )
     
     return nn.Sequential(
@@ -139,7 +142,8 @@ def TransformerBlock_noIB(embed_dim, nr_heads, layer_fn, *args, p=0.2):
             nn.Sequential(
                 nn.LayerNorm(embed_dim), 
                 MultiHeadAttention(embed_dim, nr_heads, layer_fn, *args)
-            )
+            ),
+            drop_rate
         ),
-        mlp_noIB(embed_dim, layer_fn, *args, p=p)
+        mlp_noIB(embed_dim, layer_fn, *args, p=dropout_p)
     )

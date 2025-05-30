@@ -104,11 +104,26 @@ class LowRankLight(nn.Module):
         self.A = nn.Parameter(nn.init.uniform_(torch.empty(out_dim, rank), a=-bound, b=bound))
         # self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(out_dim, rank)))
         
-        b = F.normalize(nn.init.kaiming_normal_(torch.empty(rank, in_dim - rank)), p=2, dim=0)
-        ab = self.A @ b
-        self.B = nn.Parameter(b * 0.5*bound / ab.std()) # now all values in [A; A*B] roughly similar
+        b = F.normalize(nn.init.normal_(torch.empty(rank, in_dim - rank)), p=2, dim=0)
+
+        self.B = nn.Parameter(b * 0.5*bound / (bound / math.sqrt(3))) # now all values in [A; A*B] roughly from the same distribution as A, which is the same distribution as nn.Linear
         
         self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
+
+        # l = nn.Linear(in_dim, out_dim)
+
+        # U, S, Vt = torch.linalg.svd(l.weight)
+        # s = torch.diag(S)[:rank, :rank]
+
+        # X = U[:, :rank] @ s
+        # Y = Vt[:rank, :]
+        # Y1 = Y[:, :rank]
+        # Y2 = Y[:, rank:]
+
+        # self.A = nn.Parameter(X @ Y1)
+        # self.B = nn.Parameter(torch.linalg.pinv(Y1) @ Y2)
+        
+        # self.bias = nn.Parameter(l.bias)
 
     
     @staticmethod
