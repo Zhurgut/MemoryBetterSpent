@@ -59,9 +59,9 @@ function train(
     params = to_string(;kwargs...)
 
     if params |> isnothing
-        cmd = `python main.py -l $(layer) -m $(model) -ds $(dataset) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay --lr_decay $(lr_decay) --early_stopping $(early_stopping) -s $init_scale --dropout $(dropout) --max_bs $max_bs`
+        cmd = `python main.py -l $(layer) -m $(model) -ds $(dataset) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay --lr_decay $(Int(lr_decay)) --early_stopping $(Int(early_stopping)) -s $init_scale --dropout $(dropout) --max_bs $max_bs`
     else
-        cmd = `python main.py -l $(layer) -m $(model) -ds $(dataset) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay --lr_decay $(lr_decay) --early_stopping $(early_stopping) -s $init_scale --dropout $(dropout) --max_bs $max_bs -p $params`
+        cmd = `python main.py -l $(layer) -m $(model) -ds $(dataset) -w $width -d $depth -lr $lr -bs $bs -e $max_epochs -wd $weight_decay --lr_decay $(Int(lr_decay)) --early_stopping $(Int(early_stopping)) -s $init_scale --dropout $(dropout) --max_bs $max_bs -p $params`
     end
 
     println(cmd)

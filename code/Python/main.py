@@ -82,11 +82,13 @@ def main():
     parser.add_argument("--weight_decay", "-wd", type=float, default=0.0,
                         help="AdamW weight decay, default 0.0")
     
-    parser.add_argument("--lr_decay", type=bool, default=True, 
-                        help="whether to use a cosine schedule to decay to learning rate, (default True)")
+    parser.add_argument("--lr_decay", type=int, default=1, 
+                        choices=[0,1],
+                        help="whether to use a cosine schedule to decay to learning rate, (default 1, i.e. true)")
     
-    parser.add_argument("--early_stopping", type=bool, default=True,
-                        help="enable early stopping if the program determines that not much can be gained from further training")
+    parser.add_argument("--early_stopping", type=int, default=1,
+                        choices=[0,1],
+                        help="enable early stopping if the program determines that not much can be gained from further training, (default 1, i.e. true)")
     
     parser.add_argument("--init_scale", "-s", type=float, default=1.0,
                         help="modify initialization scale for the weights, default 1.0")
@@ -141,7 +143,7 @@ def main():
          
 
     training_losses, training_accuracies, test_losses, test_accuracies, times = train(
-        model, dataset, args.epochs, args.learning_rate, args.weight_decay, args.early_stopping, args.lr_decay
+        model, dataset, args.epochs, args.learning_rate, args.weight_decay, bool(args.early_stopping), bool(args.lr_decay)
     )
 
     times = [t - times[0] for t in times]
