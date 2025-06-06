@@ -5,4 +5,7 @@ build: force
 validate: force
 	python -c "import test; test.validate()"
 
+bench: force
+	python -c "import test; test.benchmark_all()"
+
 force:
