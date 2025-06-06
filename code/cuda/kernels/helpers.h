@@ -10,6 +10,9 @@
 // ATTENTION, MACROS!
 // tread carefully!
 
+
+#define CEIL_DIV(a, b) (((a)-1) / (b) + 1)
+
 #define MAX(x, y) (x > y ? x : y)
 #define MIN(x, y) (x < y ? x : y)
 

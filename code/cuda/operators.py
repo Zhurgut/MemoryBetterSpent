@@ -1,16 +1,18 @@
-
 import torch
-try: # instead of torch.ops.load_library(path_to_.so_file)
+
+try:  # instead of torch.ops.load_library(path_to_.so_file)
     import my_cuda_kernels
 except ImportError:
     pass
+
 
 def reference(a, a_pitch, b, c, x, x_pitch, y):
     torch.matmul(a, b, out=x)
     torch.matmul(a.T, c, out=y)
 
-def mm_and_mTm(op):
-    
+
+def with_checks(op):
+
     def fn(A, B, C, X, Y):
 
         M, P = X.size()
@@ -35,9 +37,13 @@ def mm_and_mTm(op):
         return op(A, A.stride(0), B, C, X, X.stride(0), Y)
 
     return fn
-    
 
-versions = {k: mm_and_mTm(op) for (k, op) in {
-    "reference": reference,
-    "base": torch.ops.my_cuda_kernels.base,
-}.items()}
+
+versions = {
+    k: with_checks(op)
+    for (k, op) in {
+        "reference": reference,
+        "base": torch.ops.my_cuda_kernels.base,
+        "coalesce": torch.ops.my_cuda_kernels.coalesce,
+    }.items()
+}
