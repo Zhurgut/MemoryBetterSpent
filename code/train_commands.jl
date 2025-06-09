@@ -347,3 +347,36 @@ collect_measurements(
     patch_size=8,
     nr_heads=12
 )
+
+collect_measurements(
+    layer=dense,
+    model=mlp,
+    dataset=cifar10,
+    width=1024,
+    depth=[3, 4],
+    lr=[1e-4, 5e-4, 1e-3],
+    bs=1000,
+    max_bs=5000,
+    max_epochs=4,
+    weight_decay=[0.01, 0.02, 0.05],
+    lr_decay=true,
+    dropout=[0.0, 0.1, 0.2, 0.3],
+    id=100,
+)
+
+collect_measurements(
+    layer=dense,
+    model=mlp,
+    dataset=cifar10,
+    width=1024,
+    depth=4,
+    lr=1e-4,
+    bs=1000,
+    max_bs=5000,
+    max_epochs=4,
+    weight_decay=0.022,
+    lr_decay=true,
+    dropout=0.1,
+    id=100,
+)
+

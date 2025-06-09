@@ -22,7 +22,7 @@ function load_measurements_info(id)
 
     cd(WD)
 
-    return df[df.done, :]
+    return df
 end
 
 function load_measurements_infos(ids)
