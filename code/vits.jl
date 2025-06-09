@@ -6,56 +6,104 @@ collect_measurements(
     model=vit2,
     dataset=tiny_imagenet,
     width=192,
-    depth=9, # huge
-    lr=[2e-3, 1e-3],
+    depth=9,
+    lr=5e-4,
     bs=256,
-    max_epochs=200,
-    weight_decay=[0.01, 0.02, 0.04],
-    lr_decay=true,
+    max_epochs=1200,
+    weight_decay=0.02,
+    lr_decay=false,
     early_stopping=false,
-    dropout=[0.1, 0.2],
+    dropout=0.1,
     max_bs=1000,
-    id=20,
+    id=30,
     patch_size=8,
     nr_heads=12
 )
 
-# collect_measurements(
-#     layer=lowrank,
-#     model=vit2,
-#     dataset=tiny_imagenet,
-#     width=768,
-#     depth=9, # huge
-#     lr=5e-4,
-#     bs=256,
-#     max_epochs=50,
-#     weight_decay=0.01,
-#     lr_decay=false,
-#     early_stopping=false,
-#     dropout=0.1,
-#     max_bs=1000,
-#     id=15,
-#     patch_size=8,
-#     nr_heads=12,
-#     rank=384
-# )
 
-# collect_measurements(
-#     layer=lowranklight,
-#     model=vit2,
-#     dataset=tiny_imagenet,
-#     width=768,
-#     depth=9, # huge
-#     lr=5e-4,
-#     bs=256,
-#     max_epochs=50,
-#     weight_decay=0.01,
-#     lr_decay=false,
-#     early_stopping=false,
-#     dropout=0.1,
-#     max_bs=1000,
-#     id=16,
-#     patch_size=8,
-#     nr_heads=12,
-#     rank=384
-# )
+collect_measurements(
+    layer=lowrank,
+    model=vit2,
+    dataset=tiny_imagenet,
+    width=192,
+    depth=9,
+    lr=1e-3,
+    bs=256,
+    max_epochs=900,
+    weight_decay=0.02,
+    lr_decay=true,
+    early_stopping=false,
+    dropout=0.1,
+    max_bs=1000,
+    id=31,
+    patch_size=8,
+    nr_heads=12,
+    rank=96
+)
+
+begin
+    id=32
+
+    collect_measurements(
+        layer=lowranklight,
+        model=vit2,
+        dataset=tiny_imagenet,
+        width=192,
+        depth=9,
+        lr=1e-3,
+        bs=256,
+        max_epochs=900,
+        weight_decay=0.02,
+        lr_decay=true,
+        early_stopping=false,
+        dropout=0.1,
+        max_bs=1000,
+        id=32,
+        patch_size=8,
+        nr_heads=12,
+        rank=96
+    )
+    
+    collect_measurements(
+        layer=lowranklight,
+        model=vit2,
+        dataset=tiny_imagenet,
+        width=192,
+        depth=9,
+        lr=1e-3,
+        bs=256,
+        max_epochs=900,
+        weight_decay=0.02,
+        lr_decay=true,
+        early_stopping=false,
+        dropout=0.1,
+        max_bs=1000,
+        id=32,
+        patch_size=8,
+        nr_heads=12,
+        rank=48
+    )
+
+    # collect_measurements(
+    #     layer=lowranklight,
+    #     model=vit2,
+    #     dataset=tiny_imagenet,
+    #     width=192,
+    #     depth=9,
+    #     lr=5e-4,
+    #     bs=256,
+    #     max_epochs=1100,
+    #     weight_decay=0.02,
+    #     lr_decay=false,
+    #     early_stopping=false,
+    #     dropout=0.1,
+    #     max_bs=1000,
+    #     id=32,
+    #     patch_size=8,
+    #     nr_heads=12,
+    #     rank=24
+    # )
+
+
+
+end

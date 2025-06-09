@@ -1,0 +1,2 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+dense,"(patch_size = 8, nr_heads = 12)",vit2,768,12,0.001,256,1,0.01,1.0,0.1,1,tiny_imagenet,true,false,1000,1,false,,,,,

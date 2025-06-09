@@ -1,0 +1,2 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+lowranklight,"(rank = 64,)",mlp,1024,4,0.0002,10000,200,0.05,1.0,0.0,1,simple,false,true,50000,1,true,527364,1.0,0.9899999499320984,147,155

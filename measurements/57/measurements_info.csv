@@ -1,0 +1,6 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+dense,"(patch_size = 8, nr_heads = 12)",vit2,192,12,0.002,256,10,0.05,1.0,0.1,1,tiny_imagenet,true,false,1000,1,true,3207944,0.1765199899673462,0.16589999198913574,11,11
+dense,"(patch_size = 8, nr_heads = 12)",vit2,192,9,0.002,256,10,0.05,1.0,0.1,2,tiny_imagenet,true,false,1000,1,true,2428040,0.16766999661922455,0.15569999814033508,11,11
+dense,"(patch_size = 8, nr_heads = 12)",vit2,192,9,0.001,256,10,0.05,1.0,0.2,3,tiny_imagenet,true,false,1000,1,true,2428040,0.2329999953508377,0.21849998831748962,11,11
+dense,"(patch_size = 8, nr_heads = 12)",vit2,192,9,0.001,256,10,0.04,1.0,0.2,4,tiny_imagenet,true,false,1000,1,true,2428040,0.23387999832630157,0.21689999103546143,11,11
+dense,"(patch_size = 8, nr_heads = 12)",vit2,192,9,0.001,256,100,0.01,1.0,0.2,5,tiny_imagenet,true,false,1000,1,true,2428040,0.5013999938964844,0.4284999966621399,98,98

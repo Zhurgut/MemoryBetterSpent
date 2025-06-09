@@ -45,5 +45,7 @@ versions = {
         "reference": reference,
         "base": torch.ops.my_cuda_kernels.base,
         "coalesce": torch.ops.my_cuda_kernels.coalesce,
+        "smem_base": torch.ops.my_cuda_kernels.smem_base,
+        "smem_opt": torch.ops.my_cuda_kernels.smem_opt,
     }.items()
 }

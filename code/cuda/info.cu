@@ -32,6 +32,7 @@ int main() {
     printf("global memory: %.1f GB\n", prop.totalGlobalMem / (1024.0*1024*1024));
     printf("L2 cache: %.2f MB\n", prop.l2CacheSize / (1024.0*1024));
     printf("max shared memory per block: %d KB\n", (int) (prop.sharedMemPerBlock / 1024.0));
+    printf("max shared memory per SM: %d KB\n", (int) (prop.sharedMemPerMultiprocessor / 1024.0));
     printf("compute capability: %d.%d\n", prop.major, prop.minor);
     
 }

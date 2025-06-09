@@ -6,7 +6,12 @@ setup(
     ext_modules=[
         CUDAExtension(
             name='my_cuda_kernels',
-            sources=['kernels/base_kernel.cu'],
+            sources=[
+                'kernels/base_kernel.cu',
+                'kernels/coalesce_kernel.cu',
+                'kernels/smem_base_kernel.cu',
+                'kernels/smem_opt_kernel.cu'
+            ],
             extra_compile_args={
                 "nvcc": [
                     "-gencode=arch=compute_90,code=sm_90",

@@ -16,7 +16,7 @@
 #define MAX(x, y) (x > y ? x : y)
 #define MIN(x, y) (x < y ? x : y)
 
-#define getindex(ptr, pitch, r_idx, c_idx) ptr[r_idx * pitch + c_idx] // ptr[r_idx, c_idx]
+#define getindex(ptr, pitch, r_idx, c_idx) ptr[(r_idx) * (pitch) + (c_idx)] // ptr[r_idx, c_idx]
 #define getindex_T(ptr, pitch, r_idx, c_idx) getindex(ptr, pitch, c_idx, r_idx) // ptr.transpose()[r_idx, c_idx]
 
 

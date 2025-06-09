@@ -11,13 +11,16 @@
 // Y = (N, S)
 
 
+// uncoalesced on purpose
+
+
 __global__ void kernel_base(
         const float* A, int a_pitch, const float* B, const float* C, 
         float* X, int x_pitch, float* Y,
         int M, int N, int P, int S) {
     
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    int col = blockIdx.y * blockDim.y + threadIdx.y;
     
 
     // Compute X = A × B
@@ -48,7 +51,7 @@ void base(torch::Tensor A, int64_t a_pitch, torch::Tensor B, torch::Tensor C, to
 
     const int threads = 32;
     const dim3 threads_per_block(threads, threads);
-    const dim3 nr_blocks((max(P, S) + threads - 1) / threads, (max(M, N) + threads - 1) / threads);
+    const dim3 nr_blocks((max(M, N) + threads - 1) / threads, (max(P, S) + threads - 1) / threads);
 
     kernel_base<<<nr_blocks, threads_per_block>>>(
         A.data_ptr<float>(), a_pitch, 
@@ -65,6 +68,9 @@ void base(torch::Tensor A, int64_t a_pitch, torch::Tensor B, torch::Tensor C, to
 TORCH_LIBRARY(my_cuda_kernels, m) {
     // m.def("base(Tensor a, Tensor b, Tensor c, Tensor(x!) x, Tensor(y!) y, int bias_grad, Tensor(z!) g) -> ()");
     m.def("base(Tensor a, int a_pitch, Tensor b, Tensor c, Tensor(x!) x, int x_pitch, Tensor(y!) y) -> ()");
+    m.def("coalesce(Tensor a, int a_pitch, Tensor b, Tensor c, Tensor(x!) x, int x_pitch, Tensor(y!) y) -> ()");
+    m.def("smem_base(Tensor a, int a_pitch, Tensor b, Tensor c, Tensor(x!) x, int x_pitch, Tensor(y!) y) -> ()");
+    m.def("smem_opt(Tensor a, int a_pitch, Tensor b, Tensor c, Tensor(x!) x, int x_pitch, Tensor(y!) y) -> ()");
 }
 
 

@@ -7,6 +7,9 @@
 __pycache__/
 cifar-10-batches-py/
 cifar-10-python.tar.gz
-*.csv
 /other_code
 /old_measurements
+*.so
+*.ncu-rep
+*.lock
+*.arrow

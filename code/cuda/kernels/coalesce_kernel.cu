@@ -18,8 +18,8 @@ __global__ void kernel_coalesce(
         float* X, int x_pitch, float* Y,
         int M, int N, int P, int S) {
     
-    int col = blockIdx.x * blockDim.x + threadIdx.x % BLOCKSIZE; // increase with threadIdx.x
-    int row = blockIdx.y * blockDim.y + threadIdx.x / BLOCKSIZE; // same for all in warp
+    int col = blockIdx.x * BLOCKSIZE + threadIdx.x % BLOCKSIZE; // increase with threadIdx.x
+    int row = blockIdx.y * BLOCKSIZE + threadIdx.x / BLOCKSIZE; // same for all in warp
     
 
     // Compute X = A * B
@@ -51,7 +51,7 @@ void coalesce(torch::Tensor A, int64_t a_pitch, torch::Tensor B, torch::Tensor C
     const dim3 threads_per_block(BLOCKSIZE * BLOCKSIZE);
     const dim3 nr_blocks(CEIL_DIV(MAX(P, S), BLOCKSIZE), CEIL_DIV(MAX(M, N), BLOCKSIZE));
 
-    kernel_base<<<nr_blocks, threads_per_block>>>(
+    kernel_coalesce<<<nr_blocks, threads_per_block>>>(
         A.data_ptr<float>(), a_pitch, 
         B.data_ptr<float>(),
         C.data_ptr<float>(),
@@ -62,10 +62,6 @@ void coalesce(torch::Tensor A, int64_t a_pitch, torch::Tensor B, torch::Tensor C
 
 
 
-TORCH_LIBRARY(my_cuda_kernels, m) {
-    // m.def("base(Tensor a, Tensor b, Tensor c, Tensor(x!) x, Tensor(y!) y, int bias_grad, Tensor(z!) g) -> ()");
-    m.def("coalesce(Tensor a, int a_pitch, Tensor b, Tensor c, Tensor(x!) x, int x_pitch, Tensor(y!) y) -> ()");
-}
 
 
 TORCH_LIBRARY_IMPL(my_cuda_kernels, CUDA, m) {

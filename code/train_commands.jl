@@ -1,3 +1,61 @@
+include("run.jl")
+
+begin
+    collect_measurements(
+        layer=dense,
+        model=mlp,
+        dataset=simple,
+        width=13,
+        depth=3,
+        lr=8e-4,
+        bs=10000,
+        max_epochs=10000,
+        weight_decay=0.0,
+        lr_decay=true,
+        early_stopping=false,
+        dropout=0.0,
+        id=60
+    )
+
+    collect_measurements(
+        layer=lowrank,
+        model=mlp,
+        dataset=simple,
+        width=20,
+        depth=3,
+        lr=8e-4,
+        bs=10000,
+        max_epochs=10001,
+        weight_decay=0.0,
+        lr_decay=true,
+        early_stopping=false,
+        dropout=0.0,
+        id=61,
+        rank=4
+    )
+
+    collect_measurements(
+        layer=lowranklight,
+        model=mlp,
+        dataset=simple,
+        width=14,
+        depth=3,
+        lr=6e-4,
+        bs=10000,
+        max_epochs=10002,
+        weight_decay=0.0,
+        lr_decay=true,
+        early_stopping=false,
+        dropout=0.0,
+        id=62,
+        rank=7
+    )
+
+end
+
+
+
+
 
 collect_measurements(dense, mlp2, simple, collect(2:32:1024), 0, [1e-3, 3e-3, 1e-4], 100000, 100, 0.0, true, false, 1.0, 0.0, 1, 1000000, id=0)
 collect_measurements(dense, mlp2, simple, collect(1024:128:4096), 0, [3e-3, 5e-3, 1e-4], 100000, 100, 0.0, true, false, 1.0, 0.0, 1, 1000000, id=0)
