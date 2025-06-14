@@ -39,13 +39,16 @@ MODELS = {
     "b_mlp": models.B_MLP_noIB,
     "b_mlp2": models.B_MLP,
     "vit": models.VisionTransformer_noIB,
-    "vit2": models.VisionTransformer
+    "vit2": models.VisionTransformer,
+    "gpt2": models.GPT2,
+    "distil_gpt2": models.distilGPT2
 }
 
 DATASETS = {
     "cifar10": dataset_loader.cifar10,
     "simple": dataset_loader.simple,
-    "tiny_imagenet": dataset_loader.tiny_imagenet
+    "tiny_imagenet": dataset_loader.tiny_imagenet,
+    "wikitext2": dataset_loader.wikitext2
 }
     
 
@@ -119,6 +122,7 @@ def main():
     params = {p.split("=")[0]: int(p.split("=")[1]) for p in args.params} if args.params else {}
     
     model = None
+    is_gpt2 = False
     if args.model == "mlp" or args.model == "mlp2" or args.model == "b_mlp" or args.model == "b_mlp2":
         
         if layer_fn is layers.LowRank or layer_fn is layers.LowRankLight:
@@ -141,9 +145,23 @@ def main():
         else:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, dropout_p=p)
          
+    elif args.model == "gpt2" or args.model == "distil_gpt2":
+        
+
+        if layer_fn is layers.LowRank or layer_fn is layers.LowRankLight:
+            model = model_fn(layer_fn, params["rank"])  
+        elif layer_fn is layers.Monarch:
+            model = model_fn(layer_fn, params["nr_blocks"])
+        elif layer_fn is layers.TT or layer_fn is layers.BTT:
+            model = model_fn(layer_fn, params["nr_cores"], params["rank"])
+        else:
+            model = model_fn(layer_fn)
+        
+        is_gpt2 = True
+
 
     training_losses, training_accuracies, test_losses, test_accuracies, times = train(
-        model, dataset, args.epochs, args.learning_rate, args.weight_decay, bool(args.early_stopping), bool(args.lr_decay)
+        model, dataset, args.epochs, args.learning_rate, args.weight_decay, bool(args.early_stopping), bool(args.lr_decay), is_gpt2=is_gpt2
     )
 
     times = [t - times[0] for t in times]

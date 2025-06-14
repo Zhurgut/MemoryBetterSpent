@@ -3,7 +3,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
-from math import sqrt
+import math
 
 from latin_squares import latin_square
 
@@ -18,49 +18,50 @@ def set_scale(s):
     init_scale = s
 
 
-# size always the first parameter
 
-
-# def to_dense(fn):
+class Projectable(nn.Module):
     
-#     def construct_linear(W, b):
-#         out_d, in_d = W.shape
-#         f = nn.Linear(in_d, out_d)
-#         with torch.no_grad():
-#             f.weight = nn.Parameter(W)
-#             f.bias   = nn.Parameter(b)
-#         return f
-#     if isinstance(fn, BlockDiagonal):
-#         W = fn.to_matrix()
-#         b = fn.bias if fn.use_bias else torch.zeros(W.shape[0])
-#         return W, b, construct_linear(W.T, b)
-#     if isinstance(fn, nn.Linear):
-#         return fn.weight.T, fn.bias, fn
-#     elif isinstance(fn, LowRank):
-#         W1 = fn.fn[0].weight
-#         W2 = fn.fn[1].weight
-#         W = W2 @ W1
-#         b  = fn.bias
-#         return W.T, b, construct_linear(W, b)
-#     elif isinstance(fn, Monarch):
-#         W = fn.fn[0].to_matrix()
-#         W = fn.fn[1](W)
-#         W2 = fn.fn[2].to_matrix()
-#         b = fn.bias
+    def __init__(self, in_dim, out_dim):
+        super().__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
 
-#         W = W @ W2
+        self.lr = 1e-3
+        self.nr_steps = 5000
+
+    """
+    adjusts it's parameters to match the behaviour of the input fn
+    i.e. project the input onto the space of matrices that I (self) can represent
+    """
+    def project(self, fn: nn.Linear):
         
-#         W = fn.fn[3](W)
-#         return W, b, construct_linear(W.T, b)
-#     elif isinstance(fn, TT) or isinstance(fn, BTT):
-#         W = fn.to_matrix()
-#         b = fn.bias
-#         return W, b, construct_linear(W.T, b)
-#     else:
-#         print("hello there...")
+        out_dim, in_dim = fn.weight.shape
+        assert self.in_dim == in_dim and self.out_dim == out_dim
 
+        lr = self.lr
+        nr_steps = self.nr_steps
+        
+        opt = torch.optim.Adam(self.parameters(), lr=lr)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            opt, T_max=nr_steps, eta_min=lr / 100
+        )
 
+        self.bias = nn.Parameter(torch.zeros(out_dim, device=fn.weight.device, requires_grad=False))
 
+        I = torch.eye(in_dim, in_dim, device=fn.weight.device)
+        y = (fn(I) - fn.bias).detach()
+
+        for i in range(nr_steps):
+            
+            opt.zero_grad()
+
+            loss = torch.linalg.norm(y - self(I), ord="fro")
+            loss.backward()
+
+            opt.step()
+            scheduler.step()
+
+        self.bias = nn.Parameter(fn.bias.clone().detach())
 
 
 class SkipConnection(nn.Module):
@@ -86,29 +87,27 @@ def Dense(in_dim, out_dim):
     return nn.Linear(in_dim, out_dim)
 
 
-class MaskedSparse(nn.Module):
+class MaskedSparse(Projectable):
     
-    def __init__(self, size, mask):
-        super().__init__()
+    def __init__(self, in_dim, out_dim, mask):
+        super().__init__(in_dim, out_dim)
         
         self.mask = mask
         
-        self.size = size
-        
-        w = torch.zeros(size, size)
+        w = torch.zeros(out_dim, in_dim)
         nn.init.kaiming_normal_(w)
         self.weight = nn.Parameter(init_scale * w)
         
-        b = torch.zeros(size)
+        b = torch.zeros(out_dim)
         nn.init.uniform_(b, -1, 1)
-        self.bias   = nn.Parameter(np.sqrt(1/size) * b)
+
+        self.bias = nn.Parameter(np.sqrt(1/out_dim) * b)
     
     
     def forward(self, x):
         return x @ (self.mask * self.weight).T + self.bias
     
-    
-    
+
     def to(self, device):
 
         super(MaskedSparse, self).to(device)
@@ -120,31 +119,28 @@ class MaskedSparse(nn.Module):
 
 class Unstructured(MaskedSparse):
     
-    def __init__(self, size, size2, sparsity):
+    def __init__(self, in_dim, out_dim, sparsity):
 
-        assert size == size2
+        self.sparsity = sparsity
         
-        m = torch.rand(size, size)
-        t = torch.sort(m.flatten(), descending=True)[0][(sparsity * torch.ones(1) * size*size).floor().int()]
+        m = torch.rand(out_dim, in_dim)
+        t = torch.sort(m.flatten(), descending=True)[0][(sparsity * torch.ones(1) * out_dim*in_dim).floor().int()]
         mask = m >= t
         
-        super().__init__(size, mask)
+        super().__init__(in_dim, out_dim, mask)
         
 
-    @staticmethod
-    def from_mag_pruned(M, sparsity):
-        size = M.shape[0]
-        assert M.shape == (size, size)
-        
-        t = torch.sort(M.abs().flatten(), descending=True)[0][(sparsity * torch.ones(1) * size*size).floor().int()]
-        mask = M.abs() >= t
+    def project(self, fn):
+        sparsity = self.sparsity
+        M = fn.weight
 
-        out = Unstructured(size, sparsity)
-        out.weight = nn.Parameter(M.clone().detach())
-        out.mask = mask
+        assert M.shape == (self.out_dim, self.in_dim)
         
-        return out
+        t = torch.sort(M.abs().flatten(), descending=True)[0][(sparsity * torch.ones(1) * self.out_dim*self.in_dim).floor().int()]
+        self.mask = M.abs() >= t
 
+        self.weight = nn.Parameter(M.clone().detach())
+        self.bias = nn.Parameter(fn.bias.clone().detach())
 
 
 class BlockSparse(MaskedSparse):
@@ -152,6 +148,9 @@ class BlockSparse(MaskedSparse):
     def __init__(self, size, size2, nr_blocks_per_row, nr_blocks_to_drop_per_row):
 
         assert size == size2
+
+        self.nr_blocks_per_row = nr_blocks_per_row
+        self.nr_blocks_to_drop_per_row = nr_blocks_to_drop_per_row
             
         S = latin_square(nr_blocks_per_row)
         block_size = size // nr_blocks_per_row
@@ -159,13 +158,16 @@ class BlockSparse(MaskedSparse):
         m = S > nr_blocks_to_drop_per_row
         mask = m.repeat_interleave(block_size, dim=0).repeat_interleave(block_size, dim=1)
         
-        super().__init__(size, mask)
+        super().__init__(size, size, mask)
 
 
-    @staticmethod
-    def from_mag_pruned(M, nr_blocks_per_row, nr_blocks_to_drop_per_row):
+    def from_mag_pruned(self, fn):
+        M = fn.weight
         size = M.shape[0]
-        assert M.shape == (size, size)
+        assert M.shape == (self.out_dim, self.in_dim)
+
+        nr_blocks_per_row = self.nr_blocks_per_row
+        nr_blocks_to_drop_per_row = self.nr_blocks_to_drop_per_row
         
         block_size = size // nr_blocks_per_row
         blocks_to_keep = nr_blocks_per_row * (nr_blocks_per_row - nr_blocks_to_drop_per_row)
@@ -173,31 +175,29 @@ class BlockSparse(MaskedSparse):
         Z = nn.AvgPool2d(block_size, stride=block_size, divisor_override=1)(M.abs().unsqueeze(0).unsqueeze(0)).squeeze()
         t = torch.sort(Z.flatten(), descending=True)[0][blocks_to_keep-1]
         m = Z >= t
-        mask = m.repeat_interleave(block_size, dim=0).repeat_interleave(block_size, dim=1)
+        self.mask = m.repeat_interleave(block_size, dim=0).repeat_interleave(block_size, dim=1)
 
-        out = BlockSparse(size, nr_blocks_per_row, nr_blocks_to_drop_per_row)
-        out.weight = nn.Parameter(M.clone().detach())
-        out.mask = mask
-        
-        return out
+        self.weight = nn.Parameter(M.clone().detach())
+        self.bias = nn.Parameter(fn.bias.clone().detach())
 
 
 
-class LowRank(nn.Module):
+
+
+# bound = 1 / sqrt(in_dim)
+# self.A = nn.Parameter(nn.init.uniform_(torch.empty(out_dim, rank), a=-bound, b=bound))
+
+# b = F.normalize(nn.init.normal_(torch.empty(rank, in_dim)), p=2, dim=0)
+
+# self.B = nn.Parameter(b * 0.5*bound / (bound / sqrt(3))) 
+
+# self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
+
+
+class LowRank(Projectable):
     
     def __init__(self, in_dim, out_dim, rank):
-        super().__init__()
-
-        # bound = 1 / sqrt(in_dim)
-        # self.A = nn.Parameter(nn.init.uniform_(torch.empty(out_dim, rank), a=-bound, b=bound))
-        
-        # b = F.normalize(nn.init.normal_(torch.empty(rank, in_dim)), p=2, dim=0)
-
-        # self.B = nn.Parameter(b * 0.5*bound / (bound / sqrt(3))) 
-        
-        # self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
-
-
+        super().__init__(in_dim, out_dim)
 
         l = nn.Linear(in_dim, out_dim)
 
@@ -213,10 +213,87 @@ class LowRank(nn.Module):
         return (x @ self.B.T) @ self.A.T + self.bias
 
 
-def LowRankLight(in_dim, out_dim, rank):
-    return lowrankLight.LowRankLight(in_dim, out_dim, rank)
+    def project(self, fn):
+        
+        out_dim, in_dim = fn.weight.shape
+        assert self.in_dim == in_dim and self.out_dim == out_dim
 
-LowRankLight.from_matrix = lowrankLight.LowRankLight.from_matrix  # ok...
+        rank = self.B.size(0)
+
+        U, S, Vt = torch.linalg.svd(fn.weight)
+        s = torch.diag(S).sqrt()[:rank, :rank]
+
+        self.A = nn.Parameter(U[:, :rank] @ s)
+        self.B = nn.Parameter(s @ Vt[:rank, :])
+
+        self.bias = nn.Parameter(fn.bias.clone().detach())
+
+
+class LowRankLight(Projectable):
+
+    def __init__(self, in_dim, out_dim, rank):
+        super().__init__(in_dim, out_dim)
+
+        assert rank <= min(out_dim, in_dim)
+        
+        self.out_dim = out_dim
+        self.in_dim = in_dim
+        self.rank = rank
+        
+        bound = 1 / math.sqrt(in_dim)
+        self.A = nn.Parameter(nn.init.uniform_(torch.empty(out_dim, rank), a=-bound, b=bound))
+        # self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(out_dim, rank)))
+        
+        b = F.normalize(nn.init.normal_(torch.empty(rank, in_dim - rank)), p=2, dim=0)
+
+        self.B = nn.Parameter(b * 0.5*bound / (bound / math.sqrt(3))) # now all values in [A; A*B] roughly from the same distribution as A, which is the same distribution as nn.Linear
+        
+        self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
+
+
+    def forward(self, x):
+        M = x.shape[-1]
+        BS = math.prod(x.shape[:-1])
+        shape = x.shape
+        X = x.reshape(BS, M)
+
+        X_a = X[:, :self.rank]
+        X_ab = X[:, self.rank:]
+
+        mid = torch.addmm(X_a, X_ab, self.B.T)
+        out = torch.addmm(self.bias, mid, self.A.T)
+        
+        return out.reshape(*(shape[:-1]), -1)
+    
+
+    def project(self, fn):
+        
+        out_dim, in_dim = fn.weight.shape
+        assert self.in_dim == in_dim and self.out_dim == out_dim
+
+        rank = self.rank
+
+        U, S, Vt = torch.linalg.svd(fn.weight)
+        S = torch.diag(S)
+        
+        A = U[:, :rank] @ S[:rank, :rank]
+        B = Vt[:rank, :]
+        B1 = B[:, :rank]
+        B2 = B[:, rank:]
+        
+        X = A @ B1
+        Y = None
+        try:
+            Y = torch.linalg.solve(B1, B2)
+        except:
+            # B1 not invertible :(
+            Y = torch.linalg.pinv(B1) @ B2
+        
+        self.A = nn.Parameter(X)
+        self.B = nn.Parameter(Y)
+
+        self.bias = nn.Parameter(fn.bias.clone().detach())
+
 
 
 class BlockDiagonal(nn.Module):
@@ -287,13 +364,13 @@ class Permute(nn.Module):
     #     return p
 
 
-class Monarch(nn.Module):
+class Monarch(Projectable):
     
-    def __init__(self, size, size2, nr_blocks):
-        super().__init__()
-        self.size = size
+    def __init__(self, in_dim, out_dim, nr_blocks):
+        super().__init__(in_dim, out_dim)
 
-        assert size == size2
+        assert in_dim == out_dim
+        size = in_dim
         
         self.fn = nn.Sequential(
             BlockDiagonal(size, nr_blocks, bias=False), 
@@ -307,7 +384,7 @@ class Monarch(nn.Module):
         self.bias = nn.Parameter(np.sqrt(1/size) * b)
 
     def forward(self, x):
-        M = self.fn(torch.eye(self.size, self.size).to(x.device))
+        M = self.fn(torch.eye(self.in_dim, self.in_dim).to(x.device))
         return x @ M.T + self.bias
     
 
@@ -351,8 +428,8 @@ class TT(nn.Module):
     def init_core(self, dims):
         r = self.rank
         c = self.nr_cores
-        t = 1/sqrt(self.size) # target std of entire weight matrix, to mimic kaiming_normal
-        sigma = (t * (sqrt(r) ** (1-c))) ** (1/c)
+        t = 1/math.sqrt(self.size) # target std of entire weight matrix, to mimic kaiming_normal
+        sigma = (t * (math.sqrt(r) ** (1-c))) ** (1/c)
         G = torch.zeros(dims)
         nn.init.normal_(G, std=sigma)
         return init_scale * G

@@ -1,6 +1,8 @@
 
-
+import torch
 from torch import nn
+from transformers import GPT2LMHeadModel
+from transformers.pytorch_utils import Conv1D
 
 import layers
 import ViT
@@ -143,3 +145,67 @@ def VisionTransformer(embed_dim, image_dim, patch_size, nr_transformer_blocks, n
         *(ViT.TransformerBlock(embed_dim, nr_heads, layer_fn, *args, dropout_p=dropout_p, drop_rate=drop_rate) for _ in range(nr_transformer_blocks)),
         ViT.ClassificationHead(nr_classes)
     )
+
+
+# replace Conv1D in gpt models with equivalent nn.linear
+def replace_conv1d(model):
+    for name, child in list(model.named_children()):
+        if isinstance(child, Conv1D):
+
+            in_dim, out_dim = child.weight.shape
+
+            assert child.bias is not None
+
+            l = nn.Linear(in_dim, out_dim)
+            l.weight = nn.Parameter(child.weight.transpose(0, 1).clone().detach())
+            l.bias = nn.Parameter(child.bias.clone().detach())
+
+            model._modules[name] = l
+        else:
+            replace_conv1d(child)
+
+
+def replace_layers(module: nn.Module, layer_fn, *args):
+
+    for name, child in list(module.named_children()):
+        if isinstance(child, nn.Linear) and name != "lm_head":
+            # print(name)
+            out_dim, in_dim = child.weight.shape
+            l = layer_fn(in_dim, out_dim, *args)
+            l.project(child)
+
+            
+            # new_layer = replacement_cls(in_f, out_f, bias=bias)
+            module._modules[name] = l
+        else:
+            replace_layers(child, layer_fn, *args)
+
+
+
+def gpt2_model(model_name, layer_fn, *args):
+
+    model = GPT2LMHeadModel.from_pretrained(model_name)
+
+    replace_conv1d(model)
+
+    if layer_fn is not layers.Dense:
+        replace_layers(model, layer_fn, *args)
+
+    return model
+
+
+"""
+pretrained smaller gpt2 model 82M
+"""
+def distilGPT2(layer_fn, *args):
+    return gpt2_model("distilgpt2", layer_fn, *args)
+
+"""
+pretrained gpt2-small model 124M
+"""
+def GPT2(layer_fn, *args):
+    return gpt2_model("gpt2", layer_fn, *args)
+
+
+
+

@@ -18,7 +18,7 @@ include("run.jl")
 #     id=30,
 #     patch_size=8,
 #     nr_heads=12
-# 
+# )
 
 
 collect_measurements(
@@ -35,10 +35,10 @@ collect_measurements(
     early_stopping=false,
     dropout=0.1,
     max_bs=1000,
-    id=31,
+    id=33,
     patch_size=8,
     nr_heads=12,
-    rank=96
+    rank=48
 )
 
 begin

@@ -6,29 +6,32 @@ include("run.jl")
 include("utils.jl")
 
 function sparsity(layer::Layer, width, kwargs)
+    if width == 0
+        width=768 # hack for gpt2
+    end
     dense = width * width
-    if layer == lowrank || layer == vit_lowrank
+    if layer == lowrank
         r = kwargs.rank
         return round(100 * 2 * r * width / dense)
-    elseif layer == monarch || layer == vit_monarch
+    elseif layer == monarch
         n = kwargs.nr_blocks
         bs = width / n
         return round(100 * 2 * n * bs * bs / dense)
-    elseif layer == tt || layer == vit_tt
+    elseif layer == tt
         n = kwargs.nr_cores
         r = kwargs.rank
         s = width^(1/n)
         ps = (r * s * s) * (2 + (n-2)*r)
         return round(100 * ps / dense)
-    elseif layer == kronecker || layer == vit_kronecker
+    elseif layer == kronecker
         return round(100 * 2 * width / dense)
-    elseif layer == btt || layer == vit_btt
+    elseif layer == btt 
         n = kwargs.nr_cores
         r = kwargs.rank
         s = width^(1/n)
         ps = (r * s^(n+1)) * (2 + (n-2)*r)
         return round(100 * ps / dense)
-    elseif layer == lowranklight || layer== vit_lowranklight
+    elseif layer == lowranklight
         k = kwargs.rank
         n = width
         return round(100 * (n*k + (n-k)*k) / (n*n))
@@ -373,7 +376,7 @@ function plot_best(ids, width, depth, against_sparsity=false, range=1.1, same_de
     end 
     display(P)
 
-    P = plot(xlabel=xlabel, ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800), ylims=(0,1))
+    P = plot(xlabel=xlabel, ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
     it = 1
     for t in test
         for (ir, r) in enumerate(eachrow(t))

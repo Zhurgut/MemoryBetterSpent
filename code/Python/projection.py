@@ -20,74 +20,29 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # print(e)
 
 
-def spectral_norm(matrix):
-    return torch.linalg.svdvals(matrix)[0].item()
-
-
-def optimize(target, size, X, lr, nr_steps, layer_fn, *args, p=2):
-
-    model = layer_fn(size, *args).to(device)
-
-    model.bias = nn.Parameter(target.bias.detach().clone())
-    model.bias.requires_grad = False
-
-    opt = torch.optim.Adam(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        opt, T_max=nr_steps, eta_min=lr / 100
-    )
-
-    def loss(x, y):
-        d = x - y
-        sing_vs = d.norm(p=2, dim=1)
-        # print(sing_vs.max())
-        return sing_vs.norm(p=p)
-
-    M = target(X).detach()
-
-    for i in range(nr_steps):
-        opt.zero_grad()
-
-        L = loss(M, model(X))
-
-        if i % 200 == 0:
-            print(i, "; ", L.item())
-
-        L.backward()
-
-        opt.step()
-        scheduler.step()
-
-    model.bias.requires_grad = True
-
-    I = torch.eye(size, size).to(device)
-
-    return spectral_norm(target(I) - model(I)), model
-
-
-def project(matrix, nr_runs, layer_fn, *args, nr_steps, X=None, p=2):
+def project(matrix, nr_runs, layer_fn, *args, nr_steps):
 
     out_dim, in_dim = matrix.shape
     assert out_dim == in_dim  # for now
-    d = out_dim
-    bias = torch.zeros(d)
 
-    X = (
-        F.normalize(torch.randn(10 * d, d), p=2, dim=1).to(device)
-        if X is None
-        else X.to(device)
-    )
+    fn = nn.Linear(in_dim, out_dim)
+    fn.weight = nn.Parameter(matrix.clone().detach())
+    fn.bias = nn.Parameter(torch.zeros(out_dim))
+    fn = fn.to(device)
 
-    target = Dense(d)
-    target.weight = nn.Parameter(matrix)
-    target.bias = nn.Parameter(bias)
-    target = target.to(device)
+    def loss(layer_fn, *args):
+        l = layer_fn(in_dim, out_dim, *args).to(device)
+        l.nr_steps = nr_steps
+        l.project(fn)
+        x = torch.eye(in_dim, in_dim, device=device)
+        return torch.linalg.norm(l(x) - fn(x), ord="fro")
 
     losses = [
-        optimize(target, d, X, 1e-3, nr_steps, layer_fn, *args, p=p)[0]
+        loss(layer_fn, *args).item()
         for i in range(nr_runs)
     ]
     print(losses)
-    return min(losses), nr_parameters(layer_fn(d, *args))
+    return min(losses), nr_parameters(layer_fn(in_dim, out_dim, *args))
 
 
 def save_results(file_name, columns, *data_rows):
@@ -107,7 +62,7 @@ def save_results(file_name, columns, *data_rows):
     os.chdir(WD)
 
 
-def collect256(M, nr_runs, nr_steps, p=4):
+def collect256(M, nr_runs, nr_steps):
     size = 256
     
     assert M.shape == (size, size)
@@ -116,10 +71,10 @@ def collect256(M, nr_runs, nr_steps, p=4):
     args_lowrank = [128, 96, 64, 48, 32, 16, 8, 4]
     args_lowrank_light = [255, 224, 192, 160, 128, 64, 32, 16, 8, 4, 1]
     args_monarch = [2, 4, 8, 16, 32, 64]
-    args_tt = [(2, 16), (2, 32), (2, 48), (2, 64), (2, 96), (2, 128)]
+    # args_tt = [(2, 16), (2, 32), (2, 48), (2, 64), (2, 96), (2, 128)]
     # args_tt2 = [(4, 8), (4, 16), (4, 32), (4, 44)]
-    args_btt = [(2, 1), (2, 2), (2, 4), (2, 6), (2, 8)]
-    args_bttlight = [1, 4, 8, 12, 14, 15, 16]
+    # args_btt = [(2, 1), (2, 2), (2, 4), (2, 6), (2, 8)]
+    # args_bttlight = [1, 4, 8, 12, 14, 15, 16]
     # args_btt2 = [(4, 1), (4, 2), (4, 4), (4, 5)]
     args_blocksparse = [(16, 1), (16, 2), (16, 3), (16, 4), (16, 6), (16, 11), (16, 15)]
     
@@ -128,17 +83,16 @@ def collect256(M, nr_runs, nr_steps, p=4):
     
     # args_unstructured = [0.95, 0.7, 0.4]
     # args_lowrank = [128, 64]
-    args_monarch = [2, 8]
+    # args_monarch = [2, 8]
     # args_blr     = [(4, 2), (4, 1)]
-    args_tt = [(2, 128)]
+    # args_tt = [(2, 128)]
     # args_tt2 = [(4, 44)]
     # args_btt = [(2, 8), (2, 4)]
     # args_btt2 = [(4, 5)]
-
-    X = F.normalize(torch.randn(80 * size, size), p=2, dim=1)
+    args_blocksparse = [(16, 2), (16, 12)]
 
     
-    dense = ("dense", *project(M, 1, Dense, nr_steps=nr_steps, X=X, p=p))
+    # dense = ("dense", *project(M, 1, Dense, nr_steps=nr_steps, X=X, p=p))
     
     
     # blocks = [
@@ -165,41 +119,39 @@ def collect256(M, nr_runs, nr_steps, p=4):
     # ]
     # unstructured = add_label("unstructured", unstructured)
     
-    
-    def from_mag_pruned(size, sparsity):
-        return Unstructured.from_mag_pruned(M, sparsity)
-
+    print("unstructured")
     mag_prune = [
-        project(M, 1, from_mag_pruned, args_unstructured[i], nr_steps=nr_steps, X=X, p=p)
+        project(M, 1, Unstructured, args_unstructured[i], nr_steps=nr_steps)
         for i in range(len(args_unstructured))
     ]
     mag_prune = add_label("Unstructured, magnitude-pruned", mag_prune)
     
+    print("lowrank")
+    lowrank = [
+        project(M, 1, LowRank, args_lowrank[i], nr_steps=nr_steps)
+        for i in range(len(args_lowrank))
+    ]
+    lowrank = add_label("lowrank", lowrank)
     
-    # lowrank = [
-    #     project(M, nr_runs, LowRank, args_lowrank[i], nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_lowrank))
-    # ]
-    # lowrank = add_label("lowrank", lowrank)
-    
+
     svd = torch.linalg.svdvals(M)
-    lowrank_opt = [("LowRank", svd[rank].item(), nr_parameters(LowRank(size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
+    lowrank_opt = [("LowRankOpt", sum(svd[rank:].pow(2)).sqrt().item(), nr_parameters(LowRank(size, size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
     
-    # lowranklight_opt = [("lowrank_light_opt", svd[rank].item(), 2*size*rank - rank*rank + size) for rank in args_lowrank_light]
+    lowranklight_opt = [("lowrank_light_opt", sum(svd[rank:].pow(2)).sqrt().item(), 2*size*rank - rank*rank + size) for rank in args_lowrank_light]
     
-    # print("lowranklight")
-    # lowrank_light = [
-    #     project(M, nr_runs, LowRankLight, args_lowrank_light[i], nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_lowrank_light))
-    # ]
-    # lowrank_light = add_label("lowrank_light", lowrank_light)
+    print("lowranklight")
+    lowrank_light = [
+        project(M, 1, LowRankLight, args_lowrank_light[i], nr_steps=nr_steps)
+        for i in range(len(args_lowrank_light))
+    ]
+    lowrank_light = add_label("lowrank_light", lowrank_light)
     
-    
-    # monarch = [
-    #     project(M, nr_runs, Monarch, args_monarch[i], nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_monarch))
-    # ]
-    # monarch = add_label("monarch", monarch)
+    print("monarch")
+    monarch = [
+        project(M, nr_runs, Monarch, args_monarch[i], nr_steps=nr_steps)
+        for i in range(len(args_monarch))
+    ]
+    monarch = add_label("monarch", monarch)
     
     
     # blr = [
@@ -222,34 +174,26 @@ def collect256(M, nr_runs, nr_steps, p=4):
     #     for i in range(len(args_tt2))
     # ]
     # tt2 = add_label("tt-4cores", tt2)
-    
-    def lrl_projected(size, rank):
-        return LowRankLight.from_matrix(M, rank)
 
-    lowrank_light_projected = [
-        project(M, 1, lrl_projected, args_lowrank_light[i], nr_steps=0, X=X, p=p)
-        for i in range(len(args_lowrank_light))
-    ]
-    lowrank_light_projected = add_label("LowRankLight", lowrank_light_projected)
     
     
 
-    def btt_projected(size, nr_cores, rank):
-        return BTT.from_matrix(M.T, rank)
+    # def btt_projected(size, nr_cores, rank):
+    #     return BTT.from_matrix(M.T, rank)
 
-    btt_opt = [
-        project(M, 1, btt_projected, *(args_btt[i]), nr_steps=0, X=X, p=p)
-        for i in range(len(args_btt))
-    ]
-    btt_opt = add_label("BTT", btt_opt)
+    # btt_opt = [
+    #     project(M, 1, btt_projected, *(args_btt[i]), nr_steps=0, X=X, p=p)
+    #     for i in range(len(args_btt))
+    # ]
+    # btt_opt = add_label("BTT", btt_opt)
 
 
     
-    bttlight = [
-        project(M, nr_runs, BTTLight, args_bttlight[i], nr_steps=nr_steps, X=X, p=p)
-        for i in range(len(args_bttlight))
-    ]
-    bttlight = add_label("BTT Light", bttlight)
+    # bttlight = [
+    #     project(M, nr_runs, BTTLight, args_bttlight[i], nr_steps=nr_steps, X=X, p=p)
+    #     for i in range(len(args_bttlight))
+    # ]
+    # bttlight = add_label("BTT Light", bttlight)
     
     # btt_uopt = [
     #     project(M, nr_runs, btt_projected, *(args_btt[i]), nr_steps=0, X=X, p=p)
@@ -272,7 +216,7 @@ def collect256(M, nr_runs, nr_steps, p=4):
     # ]
     # btt2 = add_label("btt-4cores", btt2)
     
-    save_results("p256", ["layer", "op_norm", "nr_parameters"], [dense], mag_prune, lowrank_opt, btt_opt, lowrank_light_projected, bttlight)
+    save_results("p256", ["layer", "op_norm", "nr_parameters"], mag_prune, monarch, lowrank, lowrank_opt, lowrank_light, lowranklight_opt)
     
 
 
@@ -344,7 +288,7 @@ def collect256(M, nr_runs, nr_steps, p=4):
     
     
     
-collect256(model_matrix(256, 2), 3, 5000)
+collect256(model_matrix(256, 2), 2, 5000)
 # collect256(random_matrix_normal(256), 3, 5000)
 # collect729(model_matrix(729, 3), 3, 5000)
 

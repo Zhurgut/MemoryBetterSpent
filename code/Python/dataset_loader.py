@@ -8,8 +8,11 @@ from torchvision.transforms import v2
 from torch.utils.data import TensorDataset, DataLoader
 
 from datasets import load_dataset
+import transformers
+from transformers import GPT2TokenizerFast, GPT2Tokenizer
 
 from torcheval.metrics.functional import multiclass_accuracy as accuracy
+from torcheval.metrics import Perplexity
 
 import numpy as np
 
@@ -242,3 +245,74 @@ def tiny_imagenet(training_batch_size, max_batch_size):
         # loss, eval metric
         nn.CrossEntropyLoss(label_smoothing=0.1), accuracy
     )
+
+
+
+
+
+
+def wikitext2(training_batch_size, max_batch_size):
+
+    ds_folder = os.path.join(os.path.dirname(__file__), "../..", "wikitext2")
+    os.makedirs(ds_folder, exist_ok=True)
+
+    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    tokenizer.model_max_length = 10**10
+
+    train_ds = load_dataset("wikitext", "wikitext-2-raw-v1", cache_dir=ds_folder, split="train")
+    train_ds = train_ds.filter(lambda x: x["text"].strip() != "")
+    all_train_text = "\n\n".join(train_ds["text"])
+
+    train_ids = tokenizer(all_train_text, return_tensors="pt").input_ids.squeeze()  # 2.4M int64 
+
+
+    test_ds = load_dataset("wikitext", "wikitext-2-raw-v1", cache_dir=ds_folder, split="test")
+    test_ds = test_ds.filter(lambda x: x["text"].strip() != "")
+    all_test_text = "\n\n".join(test_ds["text"])
+
+    test_ids = tokenizer(all_test_text, return_tensors="pt").input_ids.squeeze()  # 250k int64 
+
+
+    def new_train_loader():
+        sample_len = 128
+        samples = []
+        i = torch.randint(0, sample_len, (1,)).item()
+        while i - sample_len < train_ids.size(0):
+            samples.append(train_ids[i:i+sample_len])
+            i += sample_len + torch.randint(-4, 4, (1,)).item()
+        
+        all_samples = torch.stack(samples)
+        ds = TensorDataset(all_samples)
+        
+        return DataLoader(ds, batch_size=training_batch_size, shuffle=True)
+    
+    # to compute perplexity, use sliding window with size 1024 and stride _
+    stride = 512
+    samples = []
+    i = 0
+    while i + 1024 < train_ids.size(0):
+        samples.append(train_ids[i:i+1024])
+        i += stride
+    all_samples = torch.stack(samples)
+    train_batches = [batch[0] for batch in DataLoader(TensorDataset(all_samples), batch_size=max_batch_size)]
+
+    samples = []
+    i = 0
+    while i + 1024 < test_ids.size(0):
+        samples.append(test_ids[i:i+1024])
+        i += stride
+    all_samples = torch.stack(samples)
+    test_batches = [batch[0] for batch in DataLoader(TensorDataset(all_samples), batch_size=max_batch_size)]
+
+
+    return (
+        None, None, None,
+
+        train_batches, test_batches, 
+        None, None,
+
+        new_train_loader,
+
+        stride, Perplexity(ignore_index=-100)
+    )
+

@@ -7,8 +7,8 @@ using Statistics: mean
 const ROOT_DIR = joinpath(@__DIR__, "..")
 
 @enum Layer dense lowrank lowranklight monarch kronecker tt btt
-@enum Model mlp mlp2 b_mlp b_mlp2 vit vit2 
-@enum Dataset simple cifar10 tiny_imagenet
+@enum Model mlp mlp2 b_mlp b_mlp2 vit vit2 gpt2 distil_gpt2
+@enum Dataset simple cifar10 tiny_imagenet wikitext2
 
 struct Measurements
     layers::Vector{Tuple{Layer, NamedTuple}}
@@ -43,7 +43,6 @@ include("utils.jl")
 
 
 
-
 function train(
         layer::Layer, model::Model, dataset::Dataset, 
         width::Int, depth::Int, 
@@ -51,6 +50,9 @@ function train(
         lr_decay::Bool, early_stopping::Bool, 
         init_scale::Float64, max_bs::Int, dropout::Float64
         ; kwargs...)
+    
+    @assert (model == gpt2 || model == distil_gpt2) == (dataset == wikitext2)
+    
     WD = pwd()
     cd(joinpath(@__DIR__, "Python"))
 
