@@ -95,3 +95,4 @@ dense,NamedTuple(),mlp,32,2,0.0016,100000,1000,0.0,1.0,0.0,93,simple,true,false,
 dense,NamedTuple(),mlp,32,2,0.0008,100000,1000,0.0,1.0,0.0,94,simple,true,false,50000,3,true,2468,0.9930000305175781,0.981666624546051,364,401
 dense,NamedTuple(),mlp,32,2,0.0005,100000,1000,0.0,1.0,0.0,95,simple,true,false,50000,3,true,2468,0.9830000400543213,0.96916663646698,383,445
 dense,NamedTuple(),mlp,32,2,0.0003,100000,1000,0.0,1.0,0.0,96,simple,true,false,50000,3,true,2468,0.9566667079925537,0.9474999904632568,506,512
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,900,0.02,1.0,0.1,97,tiny_imagenet,true,false,1000,1,false,,,,,

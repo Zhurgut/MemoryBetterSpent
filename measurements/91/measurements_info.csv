@@ -1,0 +1,10 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+lowrank,"(rank = 768,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,1,wikitext2,true,true,16,1,true,152751360,25.7896785736084,24.34413719177246,1,1
+lowrank,"(rank = 764,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,2,wikitext2,true,true,16,1,true,152161536,26.219688415527344,24.75982666015625,1,1
+lowrank,"(rank = 760,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,3,wikitext2,true,true,16,1,true,151571712,27.21234703063965,25.671201705932617,1,1
+lowrank,"(rank = 752,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,4,wikitext2,true,true,16,1,true,150392064,30.252452850341797,28.564241409301758,1,1
+lowrank,"(rank = 736,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,5,wikitext2,true,true,16,1,true,148032768,40.24226379394531,37.892635345458984,1,1
+lowrank,"(rank = 704,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,6,wikitext2,true,true,16,1,true,143314176,54.91457748413086,51.71254348754883,1,1
+lowrank,"(rank = 640,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,7,wikitext2,true,true,16,1,true,133876992,196.79067993164062,183.27621459960938,1,1
+lowrank,"(rank = 576,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,8,wikitext2,true,true,16,1,true,124439808,1409.689697265625,1355.9527587890625,1,1
+lowrank,"(rank = 512,)",gpt2,0,0,0.001,8,0,0.0,1.0,0.2,9,wikitext2,true,true,16,1,true,115002624,2461.51904296875,2414.461181640625,1,1
