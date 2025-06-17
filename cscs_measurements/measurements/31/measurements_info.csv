@@ -1,3 +1,11 @@
 layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
 lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,800,0.02,1.0,0.1,1,tiny_imagenet,true,false,1000,1,true,2096264,0.7280499935150146,0.5498999953269958,759,789
 lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,900,0.02,1.0,0.1,2,tiny_imagenet,true,false,1000,1,true,2096264,0.7356100082397461,0.5591999888420105,824,896
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,1200,0.02,1.0,0.1,3,tiny_imagenet,true,false,1000,1,true,2096264,0.757669985294342,0.568399965763092,1160,1175
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.0008,256,200,0.01,1.0,0.1,4,tiny_imagenet,true,false,1000,1,true,2096264,0.5627399682998657,0.4592999815940857,192,192
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.0008,256,200,0.02,1.0,0.1,5,tiny_imagenet,true,false,1000,1,true,2096264,0.5594800114631653,0.4633999764919281,180,184
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,200,0.01,1.0,0.1,6,tiny_imagenet,true,false,1000,1,true,2096264,0.5369799733161926,0.4530999958515167,169,186
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,200,0.02,1.0,0.1,7,tiny_imagenet,true,false,1000,1,true,2096264,0.53711998462677,0.45260000228881836,186,193
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.00125,256,200,0.01,1.0,0.1,8,tiny_imagenet,true,false,1000,1,true,2096264,0.5142999887466431,0.44020000100135803,189,192
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.00125,256,200,0.02,1.0,0.1,9,tiny_imagenet,true,false,1000,1,true,2096264,0.5099999904632568,0.4412999749183655,187,186
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.0007,256,1200,0.02,1.0,0.1,10,tiny_imagenet,true,false,1000,1,true,2096264,0.7897499799728394,0.5709999799728394,1121,1121

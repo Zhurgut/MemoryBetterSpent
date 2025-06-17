@@ -1,0 +1,4 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 48)",vit2,192,9,0.001,256,1200,0.02,1.0,0.1,1,tiny_imagenet,true,false,1000,1,true,1100936,0.701729953289032,0.5536999702453613,1105,1151
+lowranklight,"(patch_size = 8, nr_heads = 12, rank = 48)",vit2,192,9,0.001,256,1200,0.02,1.0,0.1,2,tiny_imagenet,true,false,1000,1,true,997256,0.688759982585907,0.5421000123023987,1114,1114
+lowranklight,"(patch_size = 8, nr_heads = 12, rank = 24)",vit2,192,9,0.001,256,1200,0.02,1.0,0.1,3,tiny_imagenet,true,false,1000,1,true,577352,0.5702700018882751,0.484499990940094,1138,1127

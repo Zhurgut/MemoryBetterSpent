@@ -1,2 +1,7 @@
 layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
 dense,NamedTuple(),gpt2,0,0,0.001,8,0,0.0,1.0,0.2,1,wikitext2,true,true,16,1,true,124439808,25.789684295654297,24.344139099121094,1,1
+dense,NamedTuple(),gpt2,0,0,1.0e-5,8,3,0.01,1.0,0.2,2,wikitext2,true,true,8,1,true,124439808,25.789684295654297,24.344141006469727,1,1
+dense,NamedTuple(),gpt2,0,0,2.0e-5,8,3,0.01,1.0,0.2,3,wikitext2,true,true,8,1,true,124439808,25.789684295654297,24.344141006469727,1,1
+dense,NamedTuple(),gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,4,wikitext2,true,true,8,1,true,124439808,16.131885528564453,18.647472381591797,9,11
+dense,NamedTuple(),gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,5,wikitext2,true,true,8,1,true,124439808,14.246207237243652,18.653398513793945,5,11
+dense,NamedTuple(),gpt2,0,0,2.0e-5,8,4,0.01,1.0,0.2,6,wikitext2,true,true,8,1,true,124439808,16.437320709228516,18.624134063720703,5,5
