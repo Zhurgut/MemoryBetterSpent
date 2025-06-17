@@ -274,10 +274,10 @@ def wikitext2(training_batch_size, max_batch_size):
 
 
     def new_train_loader():
-        sample_len = 128
+        sample_len = 256
         samples = []
         i = torch.randint(0, sample_len, (1,)).item()
-        while i - sample_len < train_ids.size(0):
+        while i + sample_len < train_ids.size(0):
             samples.append(train_ids[i:i+sample_len])
             i += sample_len + torch.randint(-4, 4, (1,)).item()
         

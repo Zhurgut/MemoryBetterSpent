@@ -259,10 +259,17 @@ function update_measurements_info!(df, idx, nr_parameters=nothing)
     g = groupby(results, :run_id)
 
     for run = 1:nr_runs
-        push!(best_train, maximum(g[(run,)].train_acc))
-        push!(best_test, maximum(g[(run,)].test_acc))
-        push!(epoch_of_best_train, argmax(g[(run,)].train_acc))
-        push!(epoch_of_best_test, argmax(g[(run,)].test_acc))
+        if df.model[idx] == gpt2 || df.model[idx] == distil_gpt2
+            push!(best_train, minimum(g[(run,)].train_acc))
+            push!(best_test, minimum(g[(run,)].test_acc))
+            push!(epoch_of_best_train, argmin(g[(run,)].train_acc))
+            push!(epoch_of_best_test, argmin(g[(run,)].test_acc))
+        else
+            push!(best_train, maximum(g[(run,)].train_acc))
+            push!(best_test, maximum(g[(run,)].test_acc))
+            push!(epoch_of_best_train, argmax(g[(run,)].train_acc))
+            push!(epoch_of_best_test, argmax(g[(run,)].test_acc))
+        end
     end
 
     df.best_train[idx]          = mean(best_train)

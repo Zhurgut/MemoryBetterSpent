@@ -399,6 +399,17 @@ function plot_best(ids, width, depth, against_sparsity=false, range=1.1, same_de
 
 end
 
+function progress()
+    dense = [2428040], [0.5873000025749207]
+    lr = [2096264, 1100936], [0.5709999799728394, 0.5536999702453613]
+    lrl = [1681544, 997256, 577352], [0.5771999955177307, 0.5421000123023987, 0.484499990940094]
+    p = plot(size=(600, 400))  # Initialize the plot
+    scatter!(p, dense[1], dense[2], label="dense")
+    scatter!(p, lr[1], lr[2], label="lowrank")
+    scatter!(p, lrl[1], lrl[2], label="lowrank light")
+    p
+end
+
 
 function plot_projection_results(filename)
     # Load the data from the CSV file
