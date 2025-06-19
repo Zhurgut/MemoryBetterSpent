@@ -6,6 +6,7 @@ import numpy as np
 
 from torcheval.metrics import Perplexity
 import time
+import math
 
 
 device = torch.device("cuda") # else ERROR
@@ -23,6 +24,8 @@ def train_epoch(model, opt, loss_fn, new_training_loader, is_gpt2):
     model.train(True)
     
     training_loader = new_training_loader()
+    total_loss = 0.0
+    i = 0
 
     if is_gpt2:
 
@@ -34,25 +37,31 @@ def train_epoch(model, opt, loss_fn, new_training_loader, is_gpt2):
 
             outputs = model(input_ids, labels=input_ids.clone())
             loss = outputs.loss
+            total_loss += loss.item()
 
             loss.backward()
                 
             opt.step()
-        
-        return
 
-    for X, labels in training_loader:
+            i += 1
+    else:
 
-        X, labels = X.to(device).float(), labels.to(device) # .float() ????
-        opt.zero_grad()
+        for X, labels in training_loader:
 
-        logits = model(X)
-        loss = loss_fn(logits, labels)
+            X, labels = X.to(device).float(), labels.to(device) # .float() ????
+            opt.zero_grad()
 
-        loss.backward()
-            
-        opt.step()
+            logits = model(X)
+            loss = loss_fn(logits, labels)
+            total_loss += loss.item()
 
+            loss.backward()
+                
+            opt.step()
+
+            i += 1
+
+    return total_loss / i
     
 
 
@@ -68,30 +77,30 @@ def all_logits(model, data):
     
 
 
-def evaluate(model, train_batches, test_batches, train_labels, test_labels, loss_fn, metric_fn, is_gpt2):
+def evaluate(model, train_batches, test_batches, train_labels, test_labels, loss_fn, metric_fn, compute_train_accuracy, is_gpt2):
 
     if is_gpt2:
 
         stride = loss_fn # hack, need to get the stride here all the way from dataset-loading
+        train_ppl = 1000
 
-        metric_fn.reset()
-        train_loss = 0.0
+        if compute_train_accuracy:
 
-        for batch in train_batches:
+            metric_fn.reset()
 
-            input_ids = batch
-            labels = input_ids.clone()
-            labels[:, :-stride] = -100
+            for batch in train_batches:
 
-            outputs = model(input_ids, labels=labels)
-            train_loss += outputs.loss.item()
+                input_ids = batch
+                labels = input_ids.clone()
+                labels[:, :-stride] = -100
 
-            logits = outputs.logits
-            metric_fn.update(logits[:, :-1, :], labels[:, 1:])
+                outputs = model(input_ids, labels=labels)
 
-        avg_train_loss = train_loss / len(train_batches)
-        train_ppl = metric_fn.compute()
-        
+                logits = outputs.logits
+
+                metric_fn.update(logits[:, :-1, :], labels[:, 1:])
+            
+            train_ppl = metric_fn.compute()
 
         metric_fn.reset()
         test_loss = 0.0
@@ -106,28 +115,25 @@ def evaluate(model, train_batches, test_batches, train_labels, test_labels, loss
             test_loss += outputs.loss.item()
 
             logits = outputs.logits
-            # print(logits.shape)
-            # print(labels.shape)
-            # print(nn.functional.softmax(logits, dim=-1))
-            # print(outputs.loss)
-            # print(loss_fn(outputs.logits.squeeze()[:-1], labels.squeeze()[1:]))
+
             metric_fn.update(logits[:, :-1, :], labels[:, 1:])
 
         avg_test_loss = test_loss / len(test_batches)
         test_ppl = metric_fn.compute()
 
-        return torch.Tensor([train_ppl]), torch.Tensor([avg_train_loss]), torch.Tensor([test_ppl]), torch.Tensor([avg_test_loss])
+        return torch.Tensor([train_ppl]), torch.Tensor([test_ppl]), torch.Tensor([avg_test_loss])
 
     else:
-        logits = all_logits(model, train_batches)
-        train_accuracy = metric_fn(logits, train_labels)
-        train_loss = loss_fn(logits, train_labels)
+        train_accuracy = torch.Tensor([-1])
+        if compute_train_accuracy:
+            logits = all_logits(model, train_batches)
+            train_accuracy = metric_fn(logits, train_labels)
 
         logits = all_logits(model, test_batches)
         test_accuracy = metric_fn(logits, test_labels)
         test_loss = loss_fn(logits, test_labels)
         
-        return train_accuracy, train_loss, test_accuracy, test_loss
+        return train_accuracy, test_accuracy, test_loss
     
     
     
@@ -143,8 +149,8 @@ def train(model, dataset, nr_epochs, lr, weight_decay, early_stopping, lr_decay,
         train_labels = train_labels.to(device)
     if is_gpt2:
         metric_fn = metric_fn.to(device)
+        test_batches  = [t.to(device) for t in test_batches]
         train_batches = [t.to(device) for t in train_batches]
-        test_batches = [t.to(device) for t in test_batches]
 
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=nr_epochs, eta_min=0)
@@ -161,15 +167,15 @@ def train(model, dataset, nr_epochs, lr, weight_decay, early_stopping, lr_decay,
     test_accuracies = []
     times = []
 
-    def evaluate_model():
-        return evaluate(model, train_batches, test_batches, train_labels, test_labels, loss_fn, metric_fn, is_gpt2)
+    def evaluate_model(compute_train_accuracy):
+        return evaluate(model, train_batches, test_batches, train_labels, test_labels, loss_fn, metric_fn, compute_train_accuracy, is_gpt2)
 
-    def record_training_stats():
+    def record_training_stats(epoch, train_loss):
         model.train(False)
         with torch.no_grad():
-            train_accuracy, train_loss, test_accuracy, test_loss = evaluate_model()
+            train_accuracy, test_accuracy, test_loss = evaluate_model(epoch % 10 == 0)
             
-        training_losses.append(train_loss.item())
+        training_losses.append(train_loss)
         training_accuracies.append(train_accuracy.item())
         test_losses.append(test_loss.item())
         test_accuracies.append(test_accuracy.item())
@@ -179,16 +185,20 @@ def train(model, dataset, nr_epochs, lr, weight_decay, early_stopping, lr_decay,
 
     # print("rec", time.time())
 
-    record_training_stats() # first entry before training
+    record_training_stats(-1, 0.0) # first entry before training
     # print("*")
 
-    for epoch in range(nr_epochs):
+    for epoch in range(1, nr_epochs+1):
         # print("training", time.time())
 
-        train_epoch(model, opt, loss_fn, training_loader_fn, is_gpt2)
+        train_loss = train_epoch(model, opt, loss_fn, training_loader_fn, is_gpt2)
+
+        if math.isnan(train_loss):
+            times[0] = -1 # little incidator to say that there was a nan, probably shoul introduce a proper flag or something for this sort of thing... TODO
+            break
         # print("recording", time.time())
 
-        record_training_stats()
+        record_training_stats(epoch, train_loss)
         # print("*")
 
         # check for early stopping due to convergence

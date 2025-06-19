@@ -46,7 +46,8 @@ class Projectable(nn.Module):
             opt, T_max=nr_steps, eta_min=lr / 100
         )
 
-        self.bias = nn.Parameter(torch.zeros(out_dim, device=fn.weight.device, requires_grad=False))
+        if self.bias is not None:
+            self.bias = nn.Parameter(torch.zeros(out_dim, device=fn.weight.device, requires_grad=False))
 
         I = torch.eye(in_dim, in_dim, device=fn.weight.device)
         y = (fn(I) - fn.bias).detach()
@@ -61,7 +62,8 @@ class Projectable(nn.Module):
             opt.step()
             scheduler.step()
 
-        self.bias = nn.Parameter(fn.bias.clone().detach())
+        if self.bias is not None: # respect the no bias having of self
+            self.bias = nn.Parameter(fn.bias.clone().detach())
 
 
 class SkipConnection(nn.Module):
@@ -296,41 +298,40 @@ class LowRankLight(Projectable):
 
 
 
-class BlockDiagonal(nn.Module):
+class BlockDiagonal(Projectable):
     
-    def __init__(self, size, nr_blocks, bias=True):
-        super().__init__()
+    def __init__(self, in_dim, out_dim, nr_blocks, bias=True):
+        assert in_dim % nr_blocks == 0 
+        assert out_dim % nr_blocks == 0 
+
+        super().__init__(in_dim, out_dim)
         
-        assert size % nr_blocks == 0 
-        
-        self.use_bias = bias
-        
-        self.size = size
         self.nr_blocks = nr_blocks
-        self.block_size = size // nr_blocks
+        self.block_size_in = in_dim // nr_blocks
+        self.block_size_out = out_dim // nr_blocks
 
-        w = torch.zeros(nr_blocks, self.block_size, self.block_size)
-        nn.init.kaiming_normal_(w)
-
+        bound = 1 / math.sqrt(self.block_size_in)
+        w = nn.init.uniform_(torch.empty(nr_blocks, self.block_size_in, self.block_size_out), a=-bound, b=bound)
+        
         self.weights = nn.Parameter(init_scale * w)
         
-        if self.use_bias:
-            b = torch.zeros(size)
-            nn.init.uniform_(b, -1, 1)
-            self.bias   = nn.Parameter(np.sqrt(1/size) * b)
+        if bias:
+            self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
+        else:
+            self.bias = None
     
     def forward(self, x):
-        z = x.reshape(-1, self.size)
-        batch_size, n = z.shape
+        BS, in_dim = x.shape
+        assert in_dim == self.in_dim
         
-        input_mats = z.reshape(batch_size, self.nr_blocks, self.block_size).transpose(0, 1) # (nr_blocks, batch_size, block_size) * weights: (nr_blocks, block_size, block_size)
-        # 
-        out = torch.bmm(input_mats, self.weights) # nr_blocks, batch_size, block_size
+        input_mats = x.reshape(BS, self.nr_blocks, self.block_size_in).transpose(0, 1) # (nr_blocks, batch_size, block_in_dim) * weights: (nr_blocks, block_in_dim, block_out_dim)
+
+        out = torch.bmm(input_mats, self.weights).transpose(0, 1).reshape(BS, self.out_dim) # nr_blocks, batch_size, block_size
         
-        if self.use_bias:
-            return (out.transpose(0, 1).reshape(batch_size, n) + self.bias).reshape(x.shape)
+        if self.bias is not None:
+            return out + self.bias
         else:
-            return out.transpose(0, 1).reshape(batch_size, n).reshape(x.shape)
+            return out
     
     def to_matrix(self):
         return torch.block_diag(*self.weights)
@@ -342,9 +343,9 @@ class Permute(nn.Module):
     # permute as in apply the monarch permutation matrix
     
     def __init__(self, size, nr_blocks):
-        super().__init__()
-        
         assert size % nr_blocks == 0 
+        
+        super().__init__()
         
         self.size = size
         self.nr_blocks = nr_blocks
@@ -353,9 +354,9 @@ class Permute(nn.Module):
 
     
     def forward(self, x):
-        z = x.reshape(-1, self.size)
-        bs, s = z.shape
-        return z.reshape(bs, self.nr_blocks, -1).transpose(1, 2).reshape(x.shape)
+        BS, D = x.shape
+        assert D == self.size
+        return x.reshape(BS, self.nr_blocks, -1).transpose(1, 2).reshape(BS, D)
         
     # def permutation(self, b, n):
     #     p = torch.zeros(n, dtype=torch.int)
@@ -368,24 +369,26 @@ class Monarch(Projectable):
     
     def __init__(self, in_dim, out_dim, nr_blocks):
         super().__init__(in_dim, out_dim)
+        
+        inner_dim = ((in_dim*out_dim-1) // (in_dim+out_dim) // nr_blocks + 1) * nr_blocks
+        inner_dim = min(in_dim, out_dim)
 
-        assert in_dim == out_dim
-        size = in_dim
+        assert inner_dim % nr_blocks == 0
         
         self.fn = nn.Sequential(
-            BlockDiagonal(size, nr_blocks, bias=False), 
-            Permute(size, nr_blocks),        # P
-            BlockDiagonal(size, nr_blocks, bias=False), 
-            Permute(size, size // nr_blocks) # P^T
+            BlockDiagonal(in_dim, inner_dim, nr_blocks, bias=False), # R^T
+            Permute(inner_dim, inner_dim // nr_blocks),       # P
+            BlockDiagonal(inner_dim, out_dim, nr_blocks, bias=False), # L^T 
+            Permute(out_dim, nr_blocks) # P^T
         )
         
-        b = torch.zeros(size)
-        nn.init.uniform_(b, -1, 1)
-        self.bias = nn.Parameter(np.sqrt(1/size) * b)
+        self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
 
     def forward(self, x):
-        M = self.fn(torch.eye(self.in_dim, self.in_dim).to(x.device))
-        return x @ M.T + self.bias
+        return self.fn(x) + self.bias
+    
+        # M = self.fn(torch.eye(self.in_dim, self.in_dim).to(x.device))
+        # return x @ M.T + self.bias
     
 
 
