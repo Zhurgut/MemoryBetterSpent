@@ -9,3 +9,5 @@ lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,200,0.
 lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.00125,256,200,0.01,1.0,0.1,8,tiny_imagenet,true,false,1000,1,true,2096264,0.5142999887466431,0.44020000100135803,189,192
 lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.00125,256,200,0.02,1.0,0.1,9,tiny_imagenet,true,false,1000,1,true,2096264,0.5099999904632568,0.4412999749183655,187,186
 lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.0007,256,1200,0.02,1.0,0.1,10,tiny_imagenet,true,false,1000,1,true,2096264,0.7897499799728394,0.5709999799728394,1121,1121
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.0008,256,1200,0.03,1.0,0.1,11,tiny_imagenet,true,false,1000,1,true,2096264,0.7670300006866455,0.5730000138282776,1172,1175
+lowrank,"(patch_size = 8, nr_heads = 12, rank = 96)",vit2,192,9,0.001,256,1200,0.05,1.0,0.1,12,tiny_imagenet,true,false,1000,1,true,2096264,0.7270199656486511,0.5730999708175659,1165,1193

@@ -1,0 +1,16 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+lowrank,"(rank = 704,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,1,wikitext2,false,true,8,1,true,143314176,18.467302322387695,22.923269271850586,2,7
+lowrank,"(rank = 704,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,2,wikitext2,false,true,8,1,true,143314176,16.820466995239258,21.799198150634766,3,11
+lowrank,"(rank = 704,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,3,wikitext2,false,true,8,1,true,143314176,17.803869247436523,21.586095809936523,4,11
+lowrank,"(rank = 640,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,4,wikitext2,false,true,8,1,true,133876992,20.37760353088379,26.75299835205078,2,7
+lowrank,"(rank = 640,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,5,wikitext2,false,true,8,1,true,133876992,19.542213439941406,25.172210693359375,4,11
+lowrank,"(rank = 640,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,6,wikitext2,false,true,8,1,true,133876992,20.64579963684082,24.472259521484375,7,11
+lowrank,"(rank = 512,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,7,wikitext2,false,true,8,1,true,115002624,35.481903076171875,49.46092224121094,8,8
+lowrank,"(rank = 512,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,8,wikitext2,false,true,8,1,true,115002624,39.102928161621094,46.72273254394531,8,8
+lowrank,"(rank = 512,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,9,wikitext2,false,true,8,1,true,115002624,39.85140609741211,45.830078125,11,11
+lowrank,"(rank = 384,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,10,wikitext2,false,true,8,1,true,96128256,65.17039489746094,87.14929962158203,7,10
+lowrank,"(rank = 384,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,11,wikitext2,false,true,8,1,true,96128256,74.25347137451172,89.7134780883789,8,11
+lowrank,"(rank = 384,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,12,wikitext2,false,true,8,1,true,96128256,83.25025939941406,94.2138442993164,11,11
+lowrank,"(rank = 256,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,13,wikitext2,false,true,8,1,true,77253888,116.9432601928711,159.29615783691406,11,11
+lowrank,"(rank = 256,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,14,wikitext2,false,true,8,1,true,77253888,157.7509307861328,190.61996459960938,11,11
+lowrank,"(rank = 256,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,15,wikitext2,false,true,8,1,true,77253888,214.24514770507812,238.51539611816406,11,11

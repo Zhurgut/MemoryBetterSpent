@@ -1,0 +1,16 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+lowranklight,"(rank = 704,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,1,wikitext2,false,true,8,1,true,119524608,54.931095123291016,51.7286376953125,1,1
+lowranklight,"(rank = 704,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,2,wikitext2,false,true,8,1,true,119524608,54.931095123291016,51.7286376953125,1,1
+lowranklight,"(rank = 704,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,3,wikitext2,false,true,8,1,true,119524608,28.982402801513672,29.422300338745117,2,4
+lowranklight,"(rank = 640,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,4,wikitext2,false,true,8,1,true,114216192,196.77708435058594,183.2645721435547,1,1
+lowranklight,"(rank = 640,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,5,wikitext2,false,true,8,1,true,114216192,33.367244720458984,36.93501663208008,5,5
+lowranklight,"(rank = 640,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,6,wikitext2,false,true,8,1,true,114216192,27.124130249023438,30.981876373291016,4,10
+lowranklight,"(rank = 512,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,7,wikitext2,false,true,8,1,true,102419712,1593.23779296875,1780.172607421875,3,9
+lowranklight,"(rank = 512,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,8,wikitext2,false,true,8,1,true,102419712,1613.818115234375,1814.751220703125,8,8
+lowranklight,"(rank = 512,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,9,wikitext2,false,true,8,1,true,102419712,1124.7720947265625,1256.955078125,11,11
+lowranklight,"(rank = 384,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,10,wikitext2,false,true,8,1,true,89050368,1556.7578125,1734.0009765625,7,8
+lowranklight,"(rank = 384,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,11,wikitext2,false,true,8,1,true,89050368,1633.40185546875,1826.9566650390625,8,11
+lowranklight,"(rank = 384,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,12,wikitext2,false,true,8,1,true,89050368,216.8914031982422,221.01629638671875,3,3
+lowranklight,"(rank = 256,)",gpt2,0,0,2.0e-5,8,10,0.01,1.0,0.2,13,wikitext2,false,true,8,1,false,,,,,
+lowranklight,"(rank = 256,)",gpt2,0,0,1.0e-5,8,10,0.01,1.0,0.2,14,wikitext2,false,true,8,1,false,,,,,
+lowranklight,"(rank = 256,)",gpt2,0,0,5.0e-6,8,10,0.01,1.0,0.2,15,wikitext2,false,true,8,1,false,,,,,
