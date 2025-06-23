@@ -8,6 +8,8 @@ import layers
 import ViT
 
 
+device = torch.device("cuda")
+
 # there are models with only square matrices, and models with rectangular weight matrices as well
 # you may fail to create a model when the layer type does not support non-square weight matrices 
 
@@ -156,7 +158,7 @@ def replace_conv1d(model):
 
             assert child.bias is not None
 
-            l = nn.Linear(in_dim, out_dim)
+            l = nn.Linear(in_dim, out_dim, device=device)
             l.weight = nn.Parameter(child.weight.transpose(0, 1).clone().detach())
             l.bias = nn.Parameter(child.bias.clone().detach())
 
@@ -171,7 +173,7 @@ def replace_layers(module: nn.Module, layer_fn, *args):
         if isinstance(child, nn.Linear) and name != "lm_head":
             # print(name)
             out_dim, in_dim = child.weight.shape
-            l = layer_fn(in_dim, out_dim, *args)
+            l = layer_fn(in_dim, out_dim, *args).to(device)
             l.project(child)
 
             
@@ -184,7 +186,7 @@ def replace_layers(module: nn.Module, layer_fn, *args):
 
 def gpt2_model(model_name, layer_fn, *args):
 
-    model = GPT2LMHeadModel.from_pretrained(model_name)
+    model = GPT2LMHeadModel.from_pretrained(model_name).to(device)
 
     replace_conv1d(model)
 
