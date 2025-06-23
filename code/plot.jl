@@ -80,9 +80,9 @@ function make_label(df_row, arch=false)
         write(io, ", $(df_row.width)-$(df_row.depth)")
     end
 
-    if "kwargs" in cols && df_row.kwargs != NamedTuple()
-        write(io, ", $(df_row.kwargs)")
-    end
+    # if "kwargs" in cols && df_row.kwargs != NamedTuple()
+    #     write(io, ", $(df_row.kwargs)")
+    # end
 
     if "lr" in cols
         write(io, ", lr=$(df_row.lr)")
@@ -316,99 +316,48 @@ end
 
 # max over nr_parameters
 # look at all measurements in ids for this, fix architecture (width and depth), take the best over all hyperparameters
-function plot_best(ids, width, depth, against_sparsity=false, range=1.1, same_depth=true)
-    infos = vcat([load_measurements_info(id) for id in ids]...)
+function plot_best(ids, root_path = ROOT_DIR)
+
+    infos = load_measurements_infos(ids, root_path) 
     infos = infos[infos.done, :]
-    ginfos = groupby(infos, [:width, :depth])
-    same_arch = vcat([
-        ginfos[(width=key.width, depth=depth)] for key in keys(ginfos) if (1/range)*width <= key.width <= range*width && (!same_depth || key.depth == depth)
-    ]...)
-    filtered = [filter_out_bad_ones(info) for info in groupby(same_arch, [:layer])]
-    min_nr_parameters = minimum(min(minimum(first(x).nr_parameters), minimum(last(x).nr_parameters)) for x in filtered)
-    println(min_nr_parameters)
-    train = [first(x) for x in filtered]
-    test  = [last(x)  for x in filtered]
 
-    local denses
-    try
-        denses = groupby(infos, :layer)[(layer=dense,)]
-    catch e
-        denses = groupby(infos, :layer)[(layer=vit_dense,)]
-    end
-    df = groupby(denses, [:width, :depth])
-    smaller = [filter_out_bad_ones(df[key]) for key in keys(df) if key.width <= width && key.depth <= depth && !(key.width == width && key.depth == depth) && df[key].nr_parameters[1] >= 0.9*min_nr_parameters]
+    @assert all(infos.model .== infos.model[1])
+    @assert all(infos.dataset .== infos.dataset[1])
 
-    dense_train = [first(x) for x in smaller]
-    dense_test  = [last(x)  for x in smaller]
-
-    xlabel ="nr_parameters\n"
-    x_axis_fn = r -> r.nr_parameters
-    if against_sparsity
-        xlabel = "density [%]\n"
-        x_axis_fn = r -> sparsity(r.layer, r.width, r.kwargs)
-    end
-    
-    
-
-    # smaller_dense_infos = [info for groups in g2 for info in groups  if info.width[1] <= width && info.depth[1] <= depth && info.nr_parameters[1] >= 0.9min_nr_parameters]
-    # display(smaller_dense_infos)
+    ginfos = groupby(infos, [:layer])
 
     shapes =  [:circle, :rect, :star5, :diamond, :hexagon, :cross, :xcross, :utriangle, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star8, :+, :x]
 
-    P = plot(xlabel=xlabel, ylabel="train accuracy", legend_position=:outerleft, size=(1400, 800))
-    it = 1
-    for t in train
-        for (ir, r) in enumerate(eachrow(t))
-            # scatter!(P, [r.nr_parameters], [r.best_train], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            scatter!(P, [x_axis_fn(r)], [r.best_train], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            if ir == length(shapes) it += 1 end
-        end
-        it += 1
-    end
-    ir = 1
-    for t in dense_train
-        for r in eachrow(t)
-            # scatter!(P, [r.nr_parameters], [r.best_train], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            scatter!(P, [x_axis_fn(r)], [r.best_train], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            if ir == length(shapes) it += 1 end
-            ir += 1
-        end
-    end 
-    display(P)
+    gpt = infos.model[1] == gpt2 || infos.model[1] == distil_gpt2
 
-    P = plot(xlabel=xlabel, ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
-    it = 1
-    for t in test
-        for (ir, r) in enumerate(eachrow(t))
-            # scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            scatter!(P, [x_axis_fn(r)], [r.best_test], label=make_label(r), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            if ir == length(shapes) it += 1 end
-        end
-        it += 1
+    P = if gpt
+        plot(xlabel="nr parameters\n ", ylabel="test perplexity", legend_position=:outerleft, size=(1400, 800))
+    else
+        plot(xlabel="nr parameters\n ", ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
     end
-    ir = 1
-    for t in dense_test
-        for r in eachrow(t)
-            # scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            scatter!(P, [x_axis_fn(r)], [r.best_test], label=make_label(r, true), color=palette(:tab10)[it], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-            if ir == length(shapes) it += 1 end
-            ir += 1
+
+    
+    for (il, layer_infos) in enumerate(ginfos)
+
+
+        np_infos = if gpt
+            [g[argmin(g.best_test), :] for g in groupby(layer_infos, :nr_parameters)]
+        else
+            [g[argmax(g.best_test), :] for g in groupby(layer_infos, :nr_parameters)]
         end
-    end 
-    display(P)
+
+        for (ir, r) in enumerate(np_infos)
+
+            scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r), color=palette(:tab10)[il], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+
+        end
+
+    end
+
+    P
 
 end
 
-function progress()
-    dense = [2428040], [0.5873000025749207]
-    lr = [2096264, 1100936], [0.5709999799728394, 0.5536999702453613]
-    lrl = [1681544, 997256, 577352], [0.5771999955177307, 0.5421000123023987, 0.484499990940094]
-    p = plot(size=(600, 400))  # Initialize the plot
-    scatter!(p, dense[1], dense[2], label="dense")
-    scatter!(p, lr[1], lr[2], label="lowrank")
-    scatter!(p, lrl[1], lrl[2], label="lowrank light")
-    p
-end
 
 
 function plot_projection_results(filename)
@@ -424,10 +373,12 @@ function plot_projection_results(filename)
     # Loop through each group (each label) and plot it
     for group in grouped_df
         label_name = group[1, :layer]  # Get the label for the group
-        plot!(p, group.nr_parameters, group.op_norm, label=label_name, xlabel="nr parameters\n", ylabel="\nspectral norm (F - F')")
+        plot!(p, group.nr_parameters, group.op_norm, label=label_name, xlabel="nr parameters\n", ylabel="\nFrobenius Norm || W - W' ||", ylims=(0,9))
     end
 
     # Display the plot
+    savefig(filename * ".svg")
+
     p
 end
 

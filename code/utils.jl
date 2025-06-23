@@ -3,9 +3,9 @@ using DataFrames
 
 parse_eval(x) = eval(Meta.parse(x))
 
-function load_measurements_info(id)
+function load_measurements_info(id, root_path=ROOT_DIR)
     WD = pwd()
-    cd(joinpath(ROOT_DIR, "measurements/$id"))
+    cd(joinpath(root_path, "measurements/$id"))
 
     df = CSV.read("measurements_info.csv", DataFrame)
     df.layer = parse_eval.(df.layer)
@@ -25,8 +25,8 @@ function load_measurements_info(id)
     return df
 end
 
-function load_measurements_infos(ids)
-    dfs = [load_measurements_info(id) for id in ids]
+function load_measurements_infos(ids, root_path)
+    dfs = [load_measurements_info(id, root_path) for id in ids]
     df = vcat(dfs...)
     df
 end

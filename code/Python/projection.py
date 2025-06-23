@@ -2,13 +2,46 @@ import torch
 import torch.nn.functional as F
 from layers import *
 from main import nr_parameters
-from matrices import *
 
 import os
 import csv
 from datetime import datetime
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+from transformers import AutoModel
+import torch
+
+
+model_name = "bert-base-uncased"  # some random model
+model = AutoModel.from_pretrained(model_name)
+
+l1 = dict(model.named_modules())["encoder.layer.4.attention.self.query"].weight
+l2 = dict(model.named_modules())["encoder.layer.5.attention.self.key"].weight
+l3 = dict(model.named_modules())["encoder.layer.6.attention.self.value"].weight
+l4 = dict(model.named_modules())["encoder.layer.7.attention.output.dense"].weight
+
+# for name, module in model.named_modules():
+#     if isinstance(module, torch.nn.Linear):
+#         print(module.weight.shape, ", ", name)
+
+
+def random_matrix_uniform(size):
+    return torch.rand(size, size) - 0.5
+
+
+def random_matrix_normal(size):
+    return torch.randn(size, size)
+
+
+def random_matrix_1(size):
+    m = torch.randn(size, size)
+    m = m.abs().exp() * m.sign() / 25
+    return m
+
+# from a real model
+def model_matrix(size, index):
+    return [l1, l2, l3, l4][index][:size, :size]
 
 # s = 64
 # x = torch.rand(5, s)
@@ -67,19 +100,48 @@ def collect256(M, nr_runs, nr_steps):
     
     assert M.shape == (size, size)
     
-    args_unstructured = [0.99, 0.97, 0.93, 0.88, 0.83, 0.75, 0.5, 0.3, 0.05]
+    args_unstructured = [0.99, 0.97, 0.93, 0.88, 0.83, 0.75, 0.5, 0.3, 0.1, 0.01]
     args_lowrank = [128, 96, 64, 48, 32, 16, 8, 4]
     args_lowrank_light = [255, 224, 192, 160, 128, 64, 32, 16, 8, 4, 1]
     args_monarch = [2, 4, 8, 16, 32, 64]
-    # args_tt = [(2, 16), (2, 32), (2, 48), (2, 64), (2, 96), (2, 128)]
+    args_tt = [(2, 16), (2, 32), (2, 48), (2, 64), (2, 96), (2, 128)]
     # args_tt2 = [(4, 8), (4, 16), (4, 32), (4, 44)]
-    # args_btt = [(2, 1), (2, 2), (2, 4), (2, 6), (2, 8)]
+    args_btt = [(2, 1), (2, 2), (2, 4), (2, 6), (2, 8)]
     # args_bttlight = [1, 4, 8, 12, 14, 15, 16]
     # args_btt2 = [(4, 1), (4, 2), (4, 4), (4, 5)]
     args_blocksparse = [(16, 1), (16, 2), (16, 3), (16, 4), (16, 6), (16, 11), (16, 15)]
+    args_blast = [(64, 8), (64, 32), (64, 64), (64, 96), (64, 112), (64, 120)]
+    args_blast2 = [(32, 8), (32, 32), (32, 64), (32, 96), (32, 104), (32, 112)]
+    args_blast3 = [(128, 8), (128, 32), (128, 64), (128, 96), (128, 112), (128, 120)]
+    args_noblast1 = [(32, 64), (32, 128), (32, 256), (32, 384), (32, 512)]
+    args_noblast2 = [(16, 64), (16, 128), (16, 160), (16, 192), (16, 224)]
+
+    args_theblast = [(32, 64), (32, 256), (32, 512), (32, 768), (32, 960), (32, 1024)]
+
+    results = []
+
+    def run(args, fn, label, nr_runs):
     
-    def add_label(label, data):
-        return [(label, score, nparams) for (score, nparams) in data]
+        def add_label(label, data):
+            return [(label, score, nparams) for (score, nparams) in data]
+
+        print(label)
+        out = None
+        if not isinstance(args[0], tuple):
+            out = [
+                project(M, nr_runs, fn, args[i], nr_steps=nr_steps)
+                for i in range(len(args))
+            ]
+        else:
+            out = [
+                project(M, nr_runs, fn, *(args[i]), nr_steps=nr_steps)
+                for i in range(len(args))
+            ]
+        
+        out.sort(key=lambda x: x[1]) # sort by nr parameters
+
+        out = add_label(label, out)
+        results.append(out)
     
     # args_unstructured = [0.95, 0.7, 0.4]
     # args_lowrank = [128, 64]
@@ -118,105 +180,35 @@ def collect256(M, nr_runs, nr_steps):
     #     for i in range(len(args_unstructured))
     # ]
     # unstructured = add_label("unstructured", unstructured)
+    run(args_unstructured, Unstructured, "unstructured, magnitude pruned", 1)
     
-    print("unstructured")
-    mag_prune = [
-        project(M, 1, Unstructured, args_unstructured[i], nr_steps=nr_steps)
-        for i in range(len(args_unstructured))
-    ]
-    mag_prune = add_label("Unstructured, magnitude-pruned", mag_prune)
+    run(args_lowrank, LowRank, "lowrank", 1)
     
-    print("lowrank")
-    lowrank = [
-        project(M, 1, LowRank, args_lowrank[i], nr_steps=nr_steps)
-        for i in range(len(args_lowrank))
-    ]
-    lowrank = add_label("lowrank", lowrank)
+    # svd = torch.linalg.svdvals(M)
+    # lowrank_opt = [("LowRankOpt", sum(svd[rank:].pow(2)).sqrt().item(), nr_parameters(LowRank(size, size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
     
-
-    svd = torch.linalg.svdvals(M)
-    lowrank_opt = [("LowRankOpt", sum(svd[rank:].pow(2)).sqrt().item(), nr_parameters(LowRank(size, size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
-    
-    lowranklight_opt = [("lowrank_light_opt", sum(svd[rank:].pow(2)).sqrt().item(), 2*size*rank - rank*rank + size) for rank in args_lowrank_light]
-    
-    print("lowranklight")
-    lowrank_light = [
-        project(M, 1, LowRankLight, args_lowrank_light[i], nr_steps=nr_steps)
-        for i in range(len(args_lowrank_light))
-    ]
-    lowrank_light = add_label("lowrank_light", lowrank_light)
-    
-    print("monarch")
-    monarch = [
-        project(M, nr_runs, Monarch, args_monarch[i], nr_steps=nr_steps)
-        for i in range(len(args_monarch))
-    ]
-    monarch = add_label("monarch", monarch)
-    
-    
-    # blr = [
-    #     project(M, nr_runs, BlockLowRank, *(args_blr[i]), nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_blr))
-    # ]
-    # blr = add_label("block-lowrank", blr)
+    # lowranklight_opt = [("lowrank_light_opt", sum(svd[rank:].pow(2)).sqrt().item(), 2*size*rank - rank*rank + size) for rank in args_lowrank_light]
 
     
-    # tt1 = [
-    #     project(M, nr_runs, TT, *(args_tt[i]), nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_tt))
-    # ]
-    # tt1 = add_label("tt-2cores", tt1)
-    
 
-    
-    # tt2 = [
-    #     project(M, nr_runs, TT, *(args_tt2[i]), nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_tt2))
-    # ]
-    # tt2 = add_label("tt-4cores", tt2)
+    run(args_monarch, Monarch, "monarch", nr_runs)
 
-    
-    
+    # run(args_noblast1, Noblast, "noblast8x8", nr_runs)
 
-    # def btt_projected(size, nr_cores, rank):
-    #     return BTT.from_matrix(M.T, rank)
+    # run(args_noblast2, Noblast, "noblast16x16", nr_runs)
 
-    # btt_opt = [
-    #     project(M, 1, btt_projected, *(args_btt[i]), nr_steps=0, X=X, p=p)
-    #     for i in range(len(args_btt))
-    # ]
-    # btt_opt = add_label("BTT", btt_opt)
+    # run(args_blast,  Blast, "blast4x4", nr_runs)
+    
+    # run(args_blast3, Blast, "blast2x2", nr_runs)
 
+    run(args_tt, TT, "TT", nr_runs)
+    run(args_btt, BTT, "BTT", nr_runs)
 
+    run(args_lowrank_light, LowRankLight, "lowrank_light", 1)
     
-    # bttlight = [
-    #     project(M, nr_runs, BTTLight, args_bttlight[i], nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_bttlight))
-    # ]
-    # bttlight = add_label("BTT Light", bttlight)
+    run(args_blast2, Blast, "blast8x8", nr_runs)
     
-    # btt_uopt = [
-    #     project(M, nr_runs, btt_projected, *(args_btt[i]), nr_steps=0, X=X, p=p)
-    #     for i in range(len(args_btt))
-    # ]
-    # btt_uopt = add_label("btt_opt_no_optimization", btt_uopt)
-    
-    
-    # btt1 = [
-    #     project(M, nr_runs, BTT, *(args_btt[i]), nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_btt))
-    # ]
-    # btt1 = add_label("btt-2cores", btt1)
-    
-
-    
-    # btt2 = [
-    #     project(M, nr_runs, BTT, *(args_btt2[i]), nr_steps=nr_steps, X=X, p=p)
-    #     for i in range(len(args_btt2))
-    # ]
-    # btt2 = add_label("btt-4cores", btt2)
-    
-    save_results("p256", ["layer", "op_norm", "nr_parameters"], mag_prune, monarch, lowrank, lowrank_opt, lowrank_light, lowranklight_opt)
+    save_results("p256", ["layer", "op_norm", "nr_parameters"], *results)
     
 
 
@@ -289,7 +281,7 @@ def collect256(M, nr_runs, nr_steps):
     
     
 collect256(model_matrix(256, 2), 2, 5000)
-# collect256(random_matrix_normal(256), 3, 5000)
+# collect256(random_matrix_normal(256), 2, 5000)
 # collect729(model_matrix(729, 3), 3, 5000)
 
 # project(torch.randn(64, 64), torch.rand(64), 1, LowRank, 48)
