@@ -18,6 +18,18 @@ def set_scale(s):
     init_scale = s
 
 
+def to2D(x):
+    N = x.shape[-1]
+    BS = math.prod(x.shape[:-1])
+    X = x.reshape(BS, N)
+
+    return X, x.shape
+
+def undo_to2D(out, shape):
+    
+    return out.reshape(*(shape[:-1]), -1)
+
+
 
 class Projectable(nn.Module):
     
@@ -310,7 +322,7 @@ class BlockDiagonal(Projectable):
         self.block_size_in = in_dim // nr_blocks
         self.block_size_out = out_dim // nr_blocks
 
-        bound = 1 / math.sqrt(self.block_size_in)
+        bound = math.sqrt(1 / math.sqrt(in_dim))
         w = nn.init.uniform_(torch.empty(nr_blocks, self.block_size_in, self.block_size_out), a=-bound, b=bound)
         
         self.weights = nn.Parameter(init_scale * w)
@@ -370,40 +382,42 @@ class Monarch(Projectable):
     def __init__(self, in_dim, out_dim, nr_blocks):
         super().__init__(in_dim, out_dim)
         
-        inner_dim = ((in_dim*out_dim-1) // (in_dim+out_dim) // nr_blocks + 1) * nr_blocks
+        # inner_dim = ((in_dim*out_dim-1) // (in_dim+out_dim) // nr_blocks + 1) * nr_blocks
         inner_dim = min(in_dim, out_dim)
 
         assert inner_dim % nr_blocks == 0
-        
+        self.inner_dim = inner_dim
+
         self.fn = nn.Sequential(
             BlockDiagonal(in_dim, inner_dim, nr_blocks, bias=False), # R^T
-            Permute(inner_dim, inner_dim // nr_blocks),       # P
-            BlockDiagonal(inner_dim, out_dim, nr_blocks, bias=False), # L^T 
-            Permute(out_dim, nr_blocks) # P^T
+            Permute(inner_dim, nr_blocks),       # P
+            BlockDiagonal(inner_dim, out_dim, inner_dim // nr_blocks, bias=False), # L^T 
+            Permute(out_dim, out_dim // nr_blocks) # P^T
         )
         
         self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
 
     def forward(self, x):
-        return self.fn(x) + self.bias
+        x, shape = to2D(x)
+        out = self.fn(x) + self.bias
+        return undo_to2D(out, shape)
+
     
-        # M = self.fn(torch.eye(self.in_dim, self.in_dim).to(x.device))
-        # return x @ M.T + self.bias
-    
 
 
 
-class TT(nn.Module):
+class TT(Projectable):
         
-    def __init__(self, size, size2, nr_cores, rank):
-        super().__init__()
+    def __init__(self, in_dim, out_dim, nr_cores, rank):
+        super().__init__(in_dim, out_dim)
 
-        assert size == size2
+        assert in_dim == out_dim
+        size = in_dim
         
         self.core_size = int(round(size**(1/nr_cores)))
         
         assert self.core_size ** nr_cores == size
-        assert self.check_rank_not_too_big(size, rank, nr_cores), "rank too big, more parameters than dense model..."
+        # assert self.check_rank_not_too_big(size, rank, nr_cores), "rank too big, more parameters than dense model..."
 
         self.size = size
         self.nr_cores = nr_cores
@@ -445,10 +459,12 @@ class TT(nn.Module):
         return G.reshape(self.size, self.size)
           
     def forward(self, x):
-        # manifest the matrix, then matmul, much faster than the "efficient" way, probably because large batch size 
+
         G = self.to_matrix()
 
-        return (torch.matmul(x.reshape(-1, self.size), G) + self.bias).reshape(x.shape)
+        x, shape = to2D(x)
+        out = x @ G + self.bias
+        return undo_to2D(out, shape)
     
 
 
@@ -460,16 +476,17 @@ def Kronecker(size):
 
 
 
-class BTT(nn.Module):
+class BTT(Projectable):
     
-    def __init__(self, size, size2, nr_cores, rank):
-        super().__init__()
+    def __init__(self, in_dim, out_dim, nr_cores, rank):
+        super().__init__(in_dim, out_dim)
 
-        assert size == size2
+        assert in_dim == out_dim
+        size = in_dim
         
         self.core_size = int(round(size**(1/nr_cores)))
         
-        assert self.core_size ** nr_cores == size
+        # assert self.core_size ** nr_cores == size
         # assert self.check_rank_not_too_big(size, rank, nr_cores), "rank too big, more parameters than dense model..."
 
         self.size = size
@@ -485,47 +502,13 @@ class BTT(nn.Module):
               nn.Parameter(self.init_core((*(d for i in range(nr_cores+1)), 1, r)))
         ])
         
-        b = torch.zeros(size)
-        nn.init.uniform_(b, -1, 1)
-        self.bias = nn.Parameter(np.sqrt(1/size) * b)
+        self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
 
 
     def check_rank_not_too_big(self, size, rank, nr_cores):
         nr_params = rank * (self.core_size ** (nr_cores+1)) * (2 + (nr_cores - 2) * rank)
         return nr_params <= size*size
-    
 
-    @staticmethod
-    def from_matrix(M, rank):
-        size = M.shape[0]
-        assert M.shape == (size, size)
-        
-        out = BTT(size, 2, rank)
-        d = out.core_size
-        
-        m = M.reshape(d, d, d, d)
-        
-        
-        with torch.no_grad():
-            for i in range(d):
-                for j in range(d):
-                    c = m[i, j, :, :]
-                    # print(i, ", ", j, ":\n", c)
-                    U, S, Vh = torch.linalg.svd(c)
-                    # if i == j == 0:
-                    #     print(c)
-                    #     print(U)
-                    #     print(S)
-                    #     print(Vh)
-                        
-                    s = S[0:rank].sqrt()
-                    
-                    for r in range(rank):
-                        out.cores[0].reshape(d, d, d, rank)[i, j, :, r] = s[r] * U[:, r]
-                        out.cores[1].reshape(d, d, d, rank)[i, j, :, r] = s[r] * Vh[r, :]
-        
-        return out
-    
     
     def init_core(self, dims):
         # r = self.rank
@@ -566,38 +549,54 @@ class BTT(nn.Module):
     
           
     def forward(self, x):
+
+        d = self.core_size
+        c = self.nr_cores
+        z = x.reshape(x.shape[0], *(d for _ in range(c)), 1)
         
-        G = self.to_matrix()
-        # print(G.std())
-        # exit()
+        for idx, core in enumerate(self.cores):
+            t = self.nr_cores - idx - 1
+            j = d ** t
+            i = d ** idx
+            z = torch.einsum("Bjxia,jxyiba->Bjyib", z.reshape(z.shape[0], j, d, i, z.shape[-1]), core.reshape(j, d, d, i, *core.shape[-2:]))
 
-        return (torch.matmul(x.reshape(-1, self.size), G) + self.bias).reshape(x.shape)
-
-
-
-
-# class BTTLight(nn.Module):
-    
-#     def __init__(self, size, rank): # nr cores = 2
-#         super().__init__()
+        return z.reshape(x.shape[0], -1) + self.bias
         
-#         self.size = size
+        # G = self.to_matrix()
 
-#         self.core_size = int(round(sqrt(size)))
-#         assert self.core_size * self.core_size == size
+        # x, shape = to2D(x)
+        # out = x @ G + self.bias
+        # return undo_to2D(out, shape)
+
+
+class Blast(Projectable):
+
+    def __init__(self, in_dim, out_dim, block_size, rank):
+        super().__init__(in_dim, out_dim)
+
+        assert in_dim % block_size == 0
+        assert out_dim % block_size == 0
+
+        self.block_size = block_size
+        self.rank = rank
+
+        b_in = in_dim // block_size
+        b_out = out_dim // block_size
+
+        bound = math.sqrt(3 / (2 * math.sqrt(in_dim * rank)))
+
+        self.U = nn.Parameter(nn.init.uniform_(torch.empty(b_out, rank, block_size), a=-bound, b=bound))
+        self.S = nn.Parameter(torch.randn(b_out, b_in, rank).sign())
+        self.Vt = nn.Parameter(nn.init.uniform_(torch.empty(b_in, block_size, rank), a=-bound, b=bound))
+
+        self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
         
-#         self.nr_blocks = size
-
-#         self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, self.core_size, rank)))
-#         self.B = nn.Parameter(nn.init.kaiming_normal_(torch.empty(self.nr_blocks, rank, self.core_size - rank)))  
-
-#         b = torch.zeros(size)
-#         nn.init.uniform_(b, -1, 1)
-#         self.bias = nn.Parameter(np.sqrt(1/size) * b)
-    
-    
-#     def forward(self, x):
-#         AB = torch.bmm(self.A, self.B) # nr_blocks, core_size, core_size - rank
-#         W = torch.cat((self.A, AB), dim = 2).reshape(self.size, self.size)
         
-#         return x @ W.T + self.bias
+    def forward(self, x):
+        BS, M = x.shape
+        xp = x.reshape(BS, -1, self.block_size).transpose(0, 1) # b_in, BS, block_size
+        y = torch.bmm(xp, self.Vt) # b_in, BS, rank
+        z = torch.einsum("ibr,oir->obr", y, self.S) # b_out, BS, rank
+        out = torch.bmm(z, self.U) # b_out, BS, block_size
+        return out.transpose(0, 1).reshape(BS, -1) + self.bias
+
