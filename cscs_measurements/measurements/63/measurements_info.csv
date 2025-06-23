@@ -1,0 +1,17 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+monarch,"(nr_blocks = 2,)",gpt2,0,0,0.0001,8,15,0.01,1.0,0.2,1,wikitext2,false,true,4,1,true,96128256,21.16689682006836,46.69632339477539,5,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,0.0001,8,15,0.0,1.0,0.2,2,wikitext2,false,true,4,1,true,96128256,17.733875274658203,49.32925796508789,7,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,1.0e-5,8,15,0.01,1.0,0.2,3,wikitext2,false,true,4,1,true,96128256,41.249473571777344,45.42412185668945,16,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,1.0e-5,8,15,0.0,1.0,0.2,4,wikitext2,false,true,4,1,true,96128256,41.424293518066406,45.14504623413086,16,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,1.0e-6,8,15,0.01,1.0,0.2,5,wikitext2,false,true,4,1,true,96128256,75.52583312988281,65.27901458740234,16,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,1.0e-6,8,15,0.0,1.0,0.2,6,wikitext2,false,true,4,1,true,96128256,75.23152923583984,65.56707000732422,16,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,0.0001,8,15,0.01,1.0,0.2,7,wikitext2,false,true,4,1,true,67816704,51.05149841308594,101.72486877441406,15,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,0.0001,8,15,0.0,1.0,0.2,8,wikitext2,false,true,4,1,true,67816704,47.10503387451172,102.15653991699219,12,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,1.0e-5,8,15,0.01,1.0,0.2,9,wikitext2,false,true,4,1,true,67816704,148.0811309814453,162.716796875,16,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,1.0e-5,8,15,0.0,1.0,0.2,10,wikitext2,false,true,4,1,true,67816704,146.856201171875,164.91139221191406,14,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,1.0e-6,8,15,0.01,1.0,0.2,11,wikitext2,false,true,4,1,true,67816704,371.7377624511719,326.38946533203125,16,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,1.0e-6,8,15,0.0,1.0,0.2,12,wikitext2,false,true,4,1,true,67816704,367.4485168457031,325.685546875,16,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,5.0e-6,8,15,0.01,1.0,0.2,13,wikitext2,false,true,4,1,true,96128256,49.07365417480469,50.10591506958008,16,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,5.0e-6,8,15,0.01,1.0,0.2,14,wikitext2,false,true,4,1,true,67816704,199.8369903564453,199.72463989257812,16,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,2.0e-5,8,15,0.01,1.0,0.2,15,wikitext2,false,true,4,1,true,96128256,33.24199676513672,42.15520095825195,16,11
+monarch,"(nr_blocks = 4,)",gpt2,0,0,2.0e-5,8,15,0.01,1.0,0.2,16,wikitext2,false,true,4,1,true,67816704,126.84820556640625,146.42117309570312,16,11
