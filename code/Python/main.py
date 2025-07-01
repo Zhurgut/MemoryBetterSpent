@@ -12,11 +12,26 @@ import json
 import time
 
 
-def nr_parameters(model):
+def nr_parameters(model, seen=None):
+
+    total = 0
+
+    if seen is None:
+        seen = set()
+
     if isinstance(model, layers.MaskedSparse):
-        return (model.mask.sum() + model.bias.numel()).item()
+        total += (model.mask.sum() + model.bias.numel()).item()
+    else:
+        for p in model.parameters(recurse=False):
+            ptr = p.data_ptr()
+            if ptr not in seen:
+                seen.add(ptr)
+                total += p.numel()
+
+    for child in model.children():
+        total += nr_parameters(child, seen)
     
-    return sum(p.numel() for p in model.parameters())
+    return total
 
 
 
@@ -29,6 +44,8 @@ LAYERS = {
     "kronecker": layers.Kronecker,
     "tt": layers.TT,
     "btt": layers.BTT,
+    "blast": layers.Blast,
+    "unstructured": layers.Unstructured
 }
 
 
@@ -131,6 +148,8 @@ def main():
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["nr_blocks"], p=p)
         elif layer_fn is layers.TT or layer_fn is layers.BTT:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["nr_cores"], params["rank"], p=p)
+        elif layer_fn is layers.Blast:
+            model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["block_size"], params["rank"], p=p)
         else:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, p=p)
 
@@ -142,6 +161,8 @@ def main():
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_blocks"], dropout_p=p)
         elif layer_fn is layers.TT or layer_fn is layers.BTT:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_cores"], params["rank"], dropout_p=p)
+        elif layer_fn is layers.Blast:
+            model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["block_size"], params["rank"], dropout_p=p)
         else:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, dropout_p=p)
          
@@ -154,6 +175,10 @@ def main():
             model = model_fn(layer_fn, params["nr_blocks"])
         elif layer_fn is layers.TT or layer_fn is layers.BTT:
             model = model_fn(layer_fn, params["nr_cores"], params["rank"])
+        elif layer_fn is layers.Blast:
+            model = model_fn(layer_fn, params["block_size"], params["rank"])
+        elif layer_fn is layers.Unstructured:
+            model = model_fn(layer_fn, params["density"])
         else:
             model = model_fn(layer_fn)
         

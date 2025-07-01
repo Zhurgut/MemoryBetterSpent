@@ -103,7 +103,7 @@ def collect256(M, nr_runs, nr_steps):
     args_unstructured = [0.99, 0.97, 0.93, 0.88, 0.83, 0.75, 0.5, 0.3, 0.1, 0.01]
     args_lowrank = [128, 96, 64, 48, 32, 16, 8, 4]
     args_lowrank_light = [255, 224, 192, 160, 128, 64, 32, 16, 8, 4, 1]
-    args_monarch = [2, 4, 8, 16, 32, 64]
+    args_monarch = [2, 4, 8, 16]
     args_tt = [(2, 16), (2, 32), (2, 48), (2, 64), (2, 96), (2, 128)]
     # args_tt2 = [(4, 8), (4, 16), (4, 32), (4, 44)]
     args_btt = [(2, 1), (2, 2), (2, 4), (2, 6), (2, 8)]
@@ -201,12 +201,12 @@ def collect256(M, nr_runs, nr_steps):
     
     # run(args_blast3, Blast, "blast2x2", nr_runs)
 
-    run(args_tt, TT, "TT", nr_runs)
-    run(args_btt, BTT, "BTT", nr_runs)
+    # run(args_tt, TT, "TT", nr_runs)
+    # run(args_btt, BTT, "BTT", nr_runs)
 
     run(args_lowrank_light, LowRankLight, "lowrank_light", 1)
     
-    run(args_blast2, Blast, "blast8x8", nr_runs)
+    # run(args_blast2, Blast, "blast8x8", nr_runs)
     
     save_results("p256", ["layer", "op_norm", "nr_parameters"], *results)
     

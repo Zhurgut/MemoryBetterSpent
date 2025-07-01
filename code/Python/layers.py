@@ -101,6 +101,9 @@ def Dense(in_dim, out_dim):
     return nn.Linear(in_dim, out_dim)
 
 
+# TODO adjust all masked sparse layers to take percentage as sparsity parameter, so type int!
+
+
 class MaskedSparse(Projectable):
     
     def __init__(self, in_dim, out_dim, mask):
@@ -133,24 +136,26 @@ class MaskedSparse(Projectable):
 
 class Unstructured(MaskedSparse):
     
-    def __init__(self, in_dim, out_dim, sparsity):
+    def __init__(self, in_dim, out_dim, density):
 
-        self.sparsity = sparsity
+        density = density/100 # pass arg as percentage
+
+        self.density = density
         
         m = torch.rand(out_dim, in_dim)
-        t = torch.sort(m.flatten(), descending=True)[0][(sparsity * torch.ones(1) * out_dim*in_dim).floor().int()]
+        t = torch.sort(m.flatten(), descending=True)[0][(density * torch.ones(1) * out_dim*in_dim).floor().int()]
         mask = m >= t
         
         super().__init__(in_dim, out_dim, mask)
         
 
     def project(self, fn):
-        sparsity = self.sparsity
+        density = self.density
         M = fn.weight
 
         assert M.shape == (self.out_dim, self.in_dim)
         
-        t = torch.sort(M.abs().flatten(), descending=True)[0][(sparsity * torch.ones(1) * self.out_dim*self.in_dim).floor().int()]
+        t = torch.sort(M.abs().flatten(), descending=True)[0][(density * torch.ones(1) * self.out_dim*self.in_dim).floor().int()]
         self.mask = M.abs() >= t
 
         self.weight = nn.Parameter(M.clone().detach())
@@ -381,17 +386,19 @@ class Monarch(Projectable):
     
     def __init__(self, in_dim, out_dim, nr_blocks):
         super().__init__(in_dim, out_dim)
-        
-        # inner_dim = ((in_dim*out_dim-1) // (in_dim+out_dim) // nr_blocks + 1) * nr_blocks
-        inner_dim = min(in_dim, out_dim)
 
-        assert inner_dim % nr_blocks == 0
-        self.inner_dim = inner_dim
+        lcm_nr_blocks = math.lcm(out_dim // nr_blocks, nr_blocks)
+        
+        # inner_dim = (((in_dim + out_dim) // 2 - 1) // lcm_nr_blocks + 1 + inner_dim_offset) * lcm_nr_blocks # inner dimension must be a multiple of nr_blocks as well as out_dim // nr_blocks
+
+        self.inner_dim = out_dim # projection only works with this somehow
+        inner_dim = self.inner_dim
+        self.nr_blocks = nr_blocks
 
         self.fn = nn.Sequential(
             BlockDiagonal(in_dim, inner_dim, nr_blocks, bias=False), # R^T
             Permute(inner_dim, nr_blocks),       # P
-            BlockDiagonal(inner_dim, out_dim, inner_dim // nr_blocks, bias=False), # L^T 
+            BlockDiagonal(inner_dim, out_dim, out_dim // nr_blocks, bias=False), # L^T 
             Permute(out_dim, out_dim // nr_blocks) # P^T
         )
         
@@ -401,6 +408,27 @@ class Monarch(Projectable):
         x, shape = to2D(x)
         out = self.fn(x) + self.bias
         return undo_to2D(out, shape)
+    
+
+    def project(self, fn):
+
+        out_dim, in_dim = fn.weight.shape
+        assert self.in_dim == in_dim and self.out_dim == out_dim
+
+        nr_blocks = self.nr_blocks
+
+        m = fn.weight.T.reshape(nr_blocks, self.in_dim // nr_blocks, nr_blocks, self.out_dim // nr_blocks)
+
+        with torch.no_grad():
+            for i in range(nr_blocks):
+                for j in range(self.out_dim // nr_blocks):
+                    y = m[i, :, :, j]
+                    s = torch.linalg.svd(y)
+                    d = math.sqrt(s.S[0])
+                    self.fn[0].weights[i, :, j] = d * s.U[:, 0]
+                    self.fn[2].weights[j, i, :] = d * s.Vh[0, :]
+
+        self.bias = nn.Parameter(fn.bias.clone().detach())
 
     
 
@@ -592,11 +620,23 @@ class Blast(Projectable):
         self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
         
         
-    def forward(self, x):
+    def forward2(self, x):
+        x, shape = to2D(x)
+
         BS, M = x.shape
         xp = x.reshape(BS, -1, self.block_size).transpose(0, 1) # b_in, BS, block_size
         y = torch.bmm(xp, self.Vt) # b_in, BS, rank
         z = torch.einsum("ibr,oir->obr", y, self.S) # b_out, BS, rank
         out = torch.bmm(z, self.U) # b_out, BS, block_size
-        return out.transpose(0, 1).reshape(BS, -1) + self.bias
+        out = out.transpose(0, 1).reshape(BS, -1) + self.bias
+        
+        return undo_to2D(out, shape)
 
+    def forward(self, x): # much faster
+        x, shape = to2D(x)
+
+        W = self.forward2(torch.eye(self.in_dim, self.in_dim, device=x.device))
+
+        out = torch.addmm(self.bias, x, W)  
+        
+        return undo_to2D(out, shape)

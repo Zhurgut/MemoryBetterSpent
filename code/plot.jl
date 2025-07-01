@@ -5,7 +5,7 @@ using DataFrames, Plots
 include("run.jl")
 include("utils.jl")
 
-function sparsity(layer::Layer, width, kwargs)
+function density(layer::Layer, width, kwargs)
     if width == 0
         width=768 # hack for gpt2
     end
@@ -16,7 +16,7 @@ function sparsity(layer::Layer, width, kwargs)
     elseif layer == monarch
         n = kwargs.nr_blocks
         bs = width / n
-        return round(100 * 2 * n * bs * bs / dense)
+        return round(100 * (n * bs * bs + n * n * bs) / dense)
     elseif layer == tt
         n = kwargs.nr_cores
         r = kwargs.rank
@@ -35,6 +35,8 @@ function sparsity(layer::Layer, width, kwargs)
         k = kwargs.rank
         n = width
         return round(100 * (n*k + (n-k)*k) / (n*n))
+    elseif layer == unstructured
+        return kwargs.density
     end
     100
 
@@ -72,7 +74,7 @@ function make_label(df_row, arch=false)
         write(io, "$(df_row.layer)")
 
         if df_row.layer != dense && "width" in cols && "kwargs" in cols
-            write(io, " [$(sparsity(df_row.layer, df_row.width, df_row.kwargs) |> Int)%]")
+            write(io, " [$(density(df_row.layer, df_row.width, df_row.kwargs) |> Int)%]")
         end
     end
 
@@ -346,7 +348,14 @@ function plot_best(ids, root_path = ROOT_DIR)
             [g[argmax(g.best_test), :] for g in groupby(layer_infos, :nr_parameters)]
         end
 
-        for (ir, r) in enumerate(np_infos)
+        X = [x.nr_parameters for x in np_infos]
+        y = [x.best_test for x in np_infos]
+        perm = sortperm(X)
+        plot!(P, X[perm], y[perm], label=nothing, color=palette(:tab10)[il])
+
+        perm = sortperm(X, rev=true)
+
+        for (ir, r) in enumerate(np_infos[perm])
 
             scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r), color=palette(:tab10)[il], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
 
@@ -373,7 +382,7 @@ function plot_projection_results(filename)
     # Loop through each group (each label) and plot it
     for group in grouped_df
         label_name = group[1, :layer]  # Get the label for the group
-        plot!(p, group.nr_parameters, group.op_norm, label=label_name, xlabel="nr parameters\n", ylabel="\nFrobenius Norm || W - W' ||", ylims=(0,9))
+        plot!(p, group.nr_parameters, group.op_norm, label=label_name, xlabel="nr parameters\n", ylabel="\nFrobenius Norm || W - W' ||")
     end
 
     # Display the plot

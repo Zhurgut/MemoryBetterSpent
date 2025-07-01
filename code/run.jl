@@ -6,7 +6,7 @@ using Statistics: mean
 
 const ROOT_DIR = joinpath(@__DIR__, "..")
 
-@enum Layer dense lowrank lowranklight monarch kronecker tt btt
+@enum Layer dense lowrank lowranklight monarch kronecker tt btt blast unstructured
 @enum Model mlp mlp2 b_mlp b_mlp2 vit vit2 gpt2 distil_gpt2
 @enum Dataset simple cifar10 tiny_imagenet wikitext2
 
@@ -127,18 +127,47 @@ function collect_measurements(;
         end
     end
 
-    collect_measurements(
-        layer, model, dataset,
-        width, depth,
-        lr, bs, max_epochs, weight_decay,
-        lr_decay, early_stopping,
-        init_scale,
-        dropout,
-        nr_runs,
-        max_bs,
-        NamedTuple{keys(kwargs)}(values(kwargs)),
-        id=id
-    )
+    layer_ks = [k for k in keys(kwargs) if k ∉ [:patch_size, :nr_heads]]
+    model_ks = [k for k in keys(kwargs) if k ∈ [:patch_size, :nr_heads]]
+    vals = values(kwargs)
+
+
+    if length(layer_ks) > 0 && all(getindex(vals, k) isa Vector for k in layer_ks)
+
+        L = length(getindex(vals, layer_ks[1]))
+        @assert all(length(getindex(vals, layer_ks[i])) == L for i in 1:length(layer_ks)) "when passing layer specific kwargs as arrays, all need to be arrays, and all need to have the same length, need to broadcast yourself, thanks!"
+        
+        for i = 1:L
+            # println(NamedTuple{keys(kwargs)}(tuple([k ∈ model_ks ? getindex(vals, k) : getindex(vals, k)[i] for k in keys(kwargs)]...)))
+            collect_measurements(
+                layer, model, dataset,
+                width, depth,
+                lr, bs, max_epochs, weight_decay,
+                lr_decay, early_stopping,
+                init_scale,
+                dropout,
+                nr_runs,
+                max_bs,
+                NamedTuple{keys(kwargs)}(tuple([k ∈ model_ks ? getindex(vals, k) : getindex(vals, k)[i] for k in keys(kwargs)]...)),
+                id=id
+            )
+        end
+    else
+
+        collect_measurements(
+            layer, model, dataset,
+            width, depth,
+            lr, bs, max_epochs, weight_decay,
+            lr_decay, early_stopping,
+            init_scale,
+            dropout,
+            nr_runs,
+            max_bs,
+            NamedTuple{keys(kwargs)}(values(kwargs)),
+            id=id
+        )
+
+    end
 end
 
 
@@ -274,8 +303,8 @@ function update_measurements_info!(df, idx, nr_parameters=nothing)
 
     df.best_train[idx]          = mean(best_train)
     df.best_test[idx]           = mean(best_test)
-    df.epoch_of_best_train[idx] = mean(epoch_of_best_test)  |> round |> Int
-    df.epoch_of_best_test[idx]  = mean(epoch_of_best_train) |> round |> Int
+    df.epoch_of_best_train[idx] = mean(epoch_of_best_train)  |> round |> Int
+    df.epoch_of_best_test[idx]  = mean(epoch_of_best_test)   |> round |> Int
 
 end
 
