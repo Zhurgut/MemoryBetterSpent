@@ -1,0 +1,19 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+monarch,"(nr_blocks = 2,)",gpt2,0,0,0.0001,8,30,0.0,1.0,0.2,1,wikitext2,true,true,4,1,true,82138368,36.62687683105469,140.65370178222656,31,11
+monarch,"(nr_blocks = 2,)",gpt2,0,0,0.0001,8,30,0.01,1.0,0.2,2,wikitext2,true,true,4,1,true,82138368,38.283851623535156,143.61997985839844,31,9
+monarch,"(nr_blocks = 2,)",gpt2,0,0,0.0001,8,30,0.02,1.0,0.2,3,wikitext2,true,true,4,1,true,82138368,35.65268325805664,134.29881286621094,31,10
+monarch,"(nr_blocks = 2,)",gpt2,0,0,5.0e-5,8,30,0.0,1.0,0.2,4,wikitext2,true,true,4,1,true,82138368,59.207218170166016,147.28851318359375,31,8
+monarch,"(nr_blocks = 2,)",gpt2,0,0,5.0e-5,8,30,0.01,1.0,0.2,5,wikitext2,true,true,4,1,true,82138368,63.55154800415039,151.30966186523438,31,9
+monarch,"(nr_blocks = 2,)",gpt2,0,0,5.0e-5,8,30,0.02,1.0,0.2,6,wikitext2,true,true,4,1,true,82138368,61.50175094604492,149.85714721679688,31,8
+monarch,"(nr_blocks = 2,)",gpt2,0,0,1.0e-5,8,30,0.0,1.0,0.2,7,wikitext2,true,true,4,1,true,82138368,119.14048767089844,167.2364959716797,31,28
+monarch,"(nr_blocks = 2,)",gpt2,0,0,1.0e-5,8,30,0.01,1.0,0.2,8,wikitext2,true,true,4,1,true,82138368,118.917236328125,167.28805541992188,31,30
+monarch,"(nr_blocks = 2,)",gpt2,0,0,1.0e-5,8,30,0.02,1.0,0.2,9,wikitext2,true,true,4,1,true,82138368,119.09886169433594,167.28228759765625,31,29
+monarch,"(nr_blocks = 4,)",gpt2,0,0,0.0001,8,30,0.0,1.0,0.2,10,wikitext2,true,true,4,1,true,61070592,48.40714645385742,159.26036071777344,31,13
+monarch,"(nr_blocks = 4,)",gpt2,0,0,0.0001,8,30,0.01,1.0,0.2,11,wikitext2,true,true,4,1,true,61070592,48.54981231689453,157.80079650878906,31,13
+monarch,"(nr_blocks = 4,)",gpt2,0,0,0.0001,8,30,0.02,1.0,0.2,12,wikitext2,true,true,4,1,true,61070592,48.4951286315918,158.60922241210938,31,13
+monarch,"(nr_blocks = 4,)",gpt2,0,0,5.0e-5,8,30,0.0,1.0,0.2,13,wikitext2,true,true,4,1,true,61070592,74.96800231933594,167.61373901367188,31,25
+monarch,"(nr_blocks = 4,)",gpt2,0,0,5.0e-5,8,30,0.01,1.0,0.2,14,wikitext2,true,true,4,1,true,61070592,74.4364242553711,167.05184936523438,31,27
+monarch,"(nr_blocks = 4,)",gpt2,0,0,5.0e-5,8,30,0.02,1.0,0.2,15,wikitext2,true,true,4,1,true,61070592,74.3348159790039,167.05441284179688,31,29
+monarch,"(nr_blocks = 4,)",gpt2,0,0,1.0e-5,8,30,0.0,1.0,0.2,16,wikitext2,true,true,4,1,true,61070592,199.41050720214844,263.7150573730469,31,28
+monarch,"(nr_blocks = 4,)",gpt2,0,0,1.0e-5,8,30,0.01,1.0,0.2,17,wikitext2,true,true,4,1,true,61070592,199.62771606445312,263.9333801269531,31,30
+monarch,"(nr_blocks = 4,)",gpt2,0,0,1.0e-5,8,30,0.02,1.0,0.2,18,wikitext2,true,true,4,1,true,61070592,199.2572784423828,263.6055908203125,31,31

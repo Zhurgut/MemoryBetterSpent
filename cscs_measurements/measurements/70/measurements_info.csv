@@ -1,0 +1,2 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+dense,NamedTuple(),gpt2,0,0,2.0e-5,8,15,0.01,1.0,0.2,1,wikitext2,false,true,4,1,true,124439808,13.061264038085938,18.261831283569336,11,7

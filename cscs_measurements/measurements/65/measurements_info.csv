@@ -1,0 +1,7 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+unstructured,"(density = 0.3,)",gpt2,0,0,1.0e-5,8,10,0.0,1.0,0.2,1,wikitext2,true,true,4,1,false,,,,,
+unstructured,"(density = 0.5,)",gpt2,0,0,1.0e-5,8,10,0.0,1.0,0.2,2,wikitext2,true,true,4,1,false,,,,,
+unstructured,"(density = 0.7,)",gpt2,0,0,1.0e-5,8,10,0.0,1.0,0.2,3,wikitext2,true,true,4,1,false,,,,,
+unstructured,"(density = 30,)",gpt2,0,0,1.0e-5,8,10,0.0,1.0,0.2,4,wikitext2,true,true,4,1,true,64985570,89.80667877197266,95.84864044189453,11,11
+unstructured,"(density = 50,)",gpt2,0,0,1.0e-5,8,10,0.0,1.0,0.2,5,wikitext2,true,true,4,1,true,81972530,26.09075927734375,27.526500701904297,11,11
+unstructured,"(density = 70,)",gpt2,0,0,1.0e-5,8,10,0.0,1.0,0.2,6,wikitext2,true,true,4,1,true,98959441,18.462261199951172,19.875587463378906,11,9

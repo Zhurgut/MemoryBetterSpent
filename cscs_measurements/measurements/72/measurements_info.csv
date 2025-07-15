@@ -1,0 +1,11 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+lowranklight,"(rank = 704,)",gpt2,0,0,2.0e-6,8,25,0.0,1.0,0.2,1,wikitext2,true,true,4,1,true,119524608,20.968076705932617,22.04152488708496,21,6
+lowranklight,"(rank = 704,)",gpt2,0,0,1.0e-6,8,25,0.0,1.0,0.2,2,wikitext2,true,true,4,1,true,119524608,20.719661712646484,21.35967445373535,21,20
+lowranklight,"(rank = 640,)",gpt2,0,0,2.0e-6,8,25,0.0,1.0,0.2,3,wikitext2,true,true,4,1,true,114216192,21.049388885498047,22.550024032592773,21,23
+lowranklight,"(rank = 640,)",gpt2,0,0,1.0e-6,8,25,0.0,1.0,0.2,4,wikitext2,true,true,4,1,true,114216192,22.51068878173828,23.14537239074707,21,26
+lowranklight,"(rank = 512,)",gpt2,0,0,2.0e-6,8,25,0.0,1.0,0.2,5,wikitext2,true,true,4,1,true,102419712,30.16384506225586,31.941513061523438,21,26
+lowranklight,"(rank = 512,)",gpt2,0,0,1.0e-6,8,25,0.0,1.0,0.2,6,wikitext2,true,true,4,1,true,102419712,31.18727684020996,31.657848358154297,21,24
+lowranklight,"(rank = 128,)",gpt2,0,0,1.0e-6,8,80,0.0,1.0,0.2,7,wikitext2,true,true,4,1,true,57593088,215.0716094970703,251.970458984375,81,55
+lowranklight,"(rank = 256,)",gpt2,0,0,1.0e-6,8,80,0.0,1.0,0.2,8,wikitext2,true,true,4,1,true,74108160,119.62791442871094,131.7919464111328,81,73
+lowranklight,"(rank = 384,)",gpt2,0,0,2.0e-6,8,25,0.0,1.0,0.2,9,wikitext2,true,true,4,1,true,89050368,126.9345474243164,133.06785583496094,21,26
+lowranklight,"(rank = 384,)",gpt2,0,0,1.0e-6,8,25,0.0,1.0,0.2,10,wikitext2,true,true,4,1,true,89050368,193.17852783203125,194.01443481445312,21,26

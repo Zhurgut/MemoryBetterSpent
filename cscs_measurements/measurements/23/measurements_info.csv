@@ -1,0 +1,17 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.008,256,100,0.0,1.0,0.1,1,tiny_imagenet,false,false,1000,1,true,1323272,0.006850000005215406,0.006199999712407589,11,2
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.008,256,100,0.01,1.0,0.1,2,tiny_imagenet,false,false,1000,1,true,1323272,0.123989999294281,0.1444000005722046,71,70
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.008,256,100,0.02,1.0,0.1,3,tiny_imagenet,false,false,1000,1,true,1323272,0.14890000224113464,0.15240000188350677,91,95
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.008,256,100,0.04,1.0,0.1,4,tiny_imagenet,false,false,1000,1,true,1323272,0.10860999673604965,0.1266999989748001,71,89
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.004,256,100,0.0,1.0,0.1,5,tiny_imagenet,false,false,1000,1,true,1323272,0.006519999820739031,0.029199998825788498,41,4
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.004,256,100,0.01,1.0,0.1,6,tiny_imagenet,false,false,1000,1,true,1323272,0.23204998672008514,0.23319999873638153,71,92
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.004,256,100,0.02,1.0,0.1,7,tiny_imagenet,false,false,1000,1,true,1323272,0.2556299865245819,0.2557999789714813,91,94
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.004,256,100,0.04,1.0,0.1,8,tiny_imagenet,false,false,1000,1,true,1323272,0.2317200005054474,0.22769999504089355,81,99
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.002,256,100,0.0,1.0,0.1,9,tiny_imagenet,false,false,1000,1,true,1323272,0.3342599868774414,0.31299999356269836,91,94
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.002,256,100,0.01,1.0,0.1,10,tiny_imagenet,false,false,1000,1,true,1323272,0.33232998847961426,0.3149999976158142,101,93
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.002,256,100,0.02,1.0,0.1,11,tiny_imagenet,false,false,1000,1,true,1323272,0.32861998677253723,0.30969998240470886,91,96
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.002,256,100,0.04,1.0,0.1,12,tiny_imagenet,false,false,1000,1,true,1323272,0.3232499957084656,0.30539998412132263,91,100
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.001,256,100,0.0,1.0,0.1,13,tiny_imagenet,false,false,1000,1,true,1323272,0.3608799874782562,0.33469998836517334,101,99
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.001,256,100,0.01,1.0,0.1,14,tiny_imagenet,false,false,1000,1,true,1323272,0.36649999022483826,0.3366999924182892,101,92
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.001,256,100,0.02,1.0,0.1,15,tiny_imagenet,false,false,1000,1,true,1323272,0.3602699935436249,0.3400999903678894,101,93
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.001,256,100,0.04,1.0,0.1,16,tiny_imagenet,false,false,1000,1,true,1323272,0.35788998007774353,0.32690000534057617,101,101
