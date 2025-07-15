@@ -70,11 +70,13 @@ function make_label(df_row, arch=false)
     io = IOBuffer()
     cols = names(df_row)
 
+    write(io, "($(df_row.id))") # measurement id
+
     if "layer" in cols
-        write(io, "$(df_row.layer)")
+        write(io, " $(df_row.layer)")
 
         if df_row.layer != dense && "width" in cols && "kwargs" in cols
-            write(io, " [$(density(df_row.layer, df_row.width, df_row.kwargs) |> Int)%]")
+            write(io, "[$(density(df_row.layer, df_row.width, df_row.kwargs) |> Int)%]")
         end
     end
 
@@ -97,6 +99,15 @@ function make_label(df_row, arch=false)
     if "init_scale" in cols && df_row.init_scale != 1.0
         write(io, ", is=$(df_row.init_scale)")
     end
+
+    if "lr_decay" in cols
+        write(io, ", lrdc=$(df_row.lr_decay)")
+    end
+
+    if "max_epochs" in cols
+        write(io, ", epochs=$(df_row.max_epochs)")
+    end
+
 
     return String(take!(io))
 end
@@ -426,4 +437,52 @@ function plot_profiling(filename)
         hline!(P, [d.cpu_forward_us d.cpu_backward_us d.gpu_forward_us], label=["dense cpu fw" "dense bw" "dense gpu fw"])
         display(P)
     end
+end
+
+
+function flops(layer_type::Layer, width, params)
+    n = width
+
+    if layer_type == dense
+        return n^2
+    end
+
+    if layer_type == lowrank
+        k = params.rank
+        return 2n*k
+    end
+
+    if layer_type == lowranklight
+        k = params.rank
+        return 2n*k - k^2
+    end
+
+    if layer_type == blast
+        p = params.block_size
+        b = n / p
+        r = params.rank
+        return (2n + b^2)*r
+    end
+
+    return nothing
+end
+
+
+
+function loss_per_flop(ms::Tuple{Int, Int}...; root_path=ROOT_DIR)
+    P = plot(xscale=:log, xlabel="log flops", ylabel="acc", size=(1200, 800))
+    # P = plot(xlabel="log flops", ylabel="acc")
+   
+    for (id, ms_id) in ms
+        mss = load_measurements_info(id, root_path)[ms_id, :]
+        data = load_data(id, ms_id, root_path)
+
+        flops_per_mvm = flops(mss.layer, mss.width, mss.kwargs)
+        data.flops = collect(1:nrow(data)) .* flops_per_mvm
+        println(flops_per_mvm, "; ", mss.layer)
+
+        plot!(P, data.flops, data.test_acc, label=make_label(mss))
+    end
+
+    P
 end

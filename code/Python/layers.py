@@ -4,6 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 import numpy as np
 import math
+import sys
 
 from latin_squares import latin_square
 
@@ -285,8 +286,9 @@ class LowRankLight(Projectable):
         return out.reshape(*(shape[:-1]), -1)
     
 
-    def project(self, fn):
-        
+
+    def project_precise(self, fn):
+
         out_dim, in_dim = fn.weight.shape
         assert self.in_dim == in_dim and self.out_dim == out_dim
 
@@ -296,22 +298,89 @@ class LowRankLight(Projectable):
         S = torch.diag(S)
         
         A = U[:, :rank] @ S[:rank, :rank]
-        B = Vt[:rank, :]
-        B1 = B[:, :rank]
-        B2 = B[:, rank:]
+        v = Vt[:rank, :]
+        B1 = v[:, :rank]
+        B2 = v[:, rank:]
         
-        X = A @ B1
-        Y = None
-        try:
-            Y = torch.linalg.solve(B1, B2)
-        except:
-            # B1 not invertible :(
-            Y = torch.linalg.pinv(B1) @ B2
-        
-        self.A = nn.Parameter(X)
-        self.B = nn.Parameter(Y)
+        out_U = A @ B1
+        out_V = torch.linalg.solve(B1, B2) # will never actually fail, because svd is noisy
+
+        self.A = nn.Parameter(out_U)
+        self.B = nn.Parameter(out_V)
 
         self.bias = nn.Parameter(fn.bias.clone().detach())
+    
+    def project_regularized(self, fn):
+
+        out_dim, in_dim = fn.weight.shape
+        assert self.in_dim == in_dim and self.out_dim == out_dim
+
+        rank = self.rank
+
+        W1 = fn.weight[:, :rank]
+        W2 = fn.weight[:, rank:]
+        
+        # solve W1*B = W2 with ridge regression
+        h = 1e-5 * torch.trace(W1.T @ W1) / rank
+        out_V = torch.linalg.solve(W1.T @ W1 + h * torch.eye(rank, rank, device=W1.device), W1.T @ W2)
+
+        self.A = nn.Parameter(W1)
+        self.B = nn.Parameter(out_V)
+
+        self.bias = nn.Parameter(fn.bias.clone().detach())
+    
+
+    def project_GD(self, fn):
+
+        out_dim, in_dim = fn.weight.shape
+        assert self.in_dim == in_dim and self.out_dim == out_dim
+
+        rank = self.rank
+
+        W1 = fn.weight[:, :rank]
+        W2 = fn.weight[:, rank:]
+
+        # A = nn.Parameter(  (W1.clone() + torch.randn(W1.size(), device=W1.device)).detach() )
+        # B = nn.Parameter(  (torch.linalg.pinv(A) @ W2).detach()  )
+
+        A = nn.Parameter( torch.randn(W1.size(), device=W1.device) )
+        B = nn.Parameter( torch.randn(rank, self.in_dim-rank, device=W1.device) )
+
+        m, k = A.shape
+        K, n = B.shape
+        
+        lr = 1e-2
+        nr_steps = 15000
+        
+        opt = torch.optim.AdamW([A, B], lr=lr, weight_decay=0.001)
+
+        x = fn.weight.abs().max()
+
+        for i in range(nr_steps):
+            
+            opt.zero_grad()
+
+            loss = (A-W1).norm().square() / (m*k) + (A@B-W2).norm().square() / (K*n)
+
+            loss.backward()
+
+            opt.step()
+
+            if B.abs().max() > 2*x:
+                break
+        
+
+        self.A = nn.Parameter(A.clone().detach())
+        self.B = nn.Parameter(B.clone().detach())
+
+        self.bias = nn.Parameter(fn.bias.clone().detach())
+
+
+    def project(self, fn):
+
+        self.project_precise(fn)
+        # self.project_regularized(fn)
+        # self.project_GD(fn) # not work well
 
 
 
@@ -387,10 +456,6 @@ class Monarch(Projectable):
     def __init__(self, in_dim, out_dim, nr_blocks):
         super().__init__(in_dim, out_dim)
 
-        lcm_nr_blocks = math.lcm(out_dim // nr_blocks, nr_blocks)
-        
-        # inner_dim = (((in_dim + out_dim) // 2 - 1) // lcm_nr_blocks + 1 + inner_dim_offset) * lcm_nr_blocks # inner dimension must be a multiple of nr_blocks as well as out_dim // nr_blocks
-
         self.inner_dim = out_dim # projection only works with this somehow
         inner_dim = self.inner_dim
         self.nr_blocks = nr_blocks
@@ -404,7 +469,18 @@ class Monarch(Projectable):
         
         self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
 
+        self.properly_initialized = False
+
+        
+
+
     def forward(self, x):
+
+        if not self.properly_initialized:
+            l = nn.Linear(self.in_dim, self.out_dim, device=x.device)
+            self.project(l)
+            self.properly_initialized = True
+
         x, shape = to2D(x)
         out = self.fn(x) + self.bias
         return undo_to2D(out, shape)
@@ -429,6 +505,8 @@ class Monarch(Projectable):
                     self.fn[2].weights[j, i, :] = d * s.Vh[0, :]
 
         self.bias = nn.Parameter(fn.bias.clone().detach())
+
+        self.properly_initialized = True
 
     
 
@@ -611,11 +689,21 @@ class Blast(Projectable):
         b_in = in_dim // block_size
         b_out = out_dim // block_size
 
-        bound = math.sqrt(3 / (2 * math.sqrt(in_dim * rank)))
 
-        self.U = nn.Parameter(nn.init.uniform_(torch.empty(b_out, rank, block_size), a=-bound, b=bound))
-        self.S = nn.Parameter(torch.randn(b_out, b_in, rank).sign())
-        self.Vt = nn.Parameter(nn.init.uniform_(torch.empty(b_in, block_size, rank), a=-bound, b=bound))
+        self.S = nn.Parameter(nn.init.uniform_(torch.empty(b_out, b_in, rank), a=0, b=2)) # just like in paper
+
+        # with S fixed like this, and U, V having entries drawn from Unif(-b, b), we expect a distribution in the manifested matrix of roughly N(0, 4nb^4/27), 
+        # that is a standart deviation of 2sqrt(n)b^2/(3*sqrt(3)), where n is the rank here
+        # to mimic dense, we want that the standart deviation = 1/2 * k, where entries in dense are drawn from Unif(-k, k), k = 1/sqrt(in_dim)
+        # therefor we chose
+        bound = math.sqrt(math.sqrt(27) / (4*rank))
+
+        # self.U = nn.Parameter(nn.init.uniform_(torch.empty(b_out, rank, block_size), a=-bound, b=bound))
+        # self.Vt = nn.Parameter(nn.init.uniform_(torch.empty(b_in, block_size, rank), a=-bound, b=bound))
+
+        # in the paper: 
+        self.U = nn.Parameter(nn.init.normal_(torch.empty(b_out, rank, block_size), mean=0, std=math.sqrt(0.02)))
+        self.Vt = nn.Parameter(nn.init.normal_(torch.empty(b_in, block_size, rank), mean=0, std=math.sqrt(0.02)))
 
         self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
         

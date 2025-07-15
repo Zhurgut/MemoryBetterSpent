@@ -13,10 +13,11 @@
 #SBATCH --mail-user=damianc@student.ethz.ch
 
 
+
 rsync -av --exclude='cifar-10-batches-py' --exclude='*.gz' --exclude='*.ncu-rep' --exclude='*.so' --exclude='*.pyc' "$HOME/code/" "$SCRATCH/code/"
 
 cd $SCRATCH
 module load libffi
-srun bash -c 'source $SCRATCH/.venv/bin/activate ; julia $SCRATCH/code/vits.jl'
+srun bash -c 'source $SCRATCH/.venv/bin/activate ; julia $SCRATCH/code/gpt2s.jl'
 
 rsync -av "$SCRATCH/measurements/" "$HOME/measurements/"

@@ -169,4 +169,23 @@ def collect(dim, nr_tf_blocks, nr_heads, ranks, batch_sizes=[128, 96, 64, 32, 16
 
 
 # collect(384, 6, 6, [32, 64, 96, 128, 192, 256])
-collect(1024, 6, 8, [128, 256, 384, 512, 640, 768, 896])
+# collect(1024, 6, 8, [128, 256, 384, 512, 640, 768, 896])
+
+from layers import *
+device = torch.device("cuda")
+import time
+
+l = Blast(192, 192, 24, 80).to(device)
+# l = nn.Linear(192, 192).to(device)
+x = torch.randn(32, 192).to(device)
+r = l(x)
+
+for i in range(8, 1024, 32):
+    x = torch.randn(i, 192).to(device)
+    torch.cuda.synchronize()
+    t1 = time.perf_counter()
+    for j in range(1000):
+        x = l(x)
+    torch.cuda.synchronize()
+    t2 = time.perf_counter()
+    print(i, ": ", t2 - t1)

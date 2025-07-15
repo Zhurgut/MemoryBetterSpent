@@ -100,7 +100,7 @@ def collect256(M, nr_runs, nr_steps):
     
     assert M.shape == (size, size)
     
-    args_unstructured = [0.99, 0.97, 0.93, 0.88, 0.83, 0.75, 0.5, 0.3, 0.1, 0.01]
+    args_unstructured = [1, 10, 30, 50, 75, 83, 88, 93, 97, 99]
     args_lowrank = [128, 96, 64, 48, 32, 16, 8, 4]
     args_lowrank_light = [255, 224, 192, 160, 128, 64, 32, 16, 8, 4, 1]
     args_monarch = [2, 4, 8, 16]

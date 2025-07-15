@@ -1,6 +1,10 @@
 include("run.jl")
 
-# zero shot perplexities 90 - 92
+
+wdecays = [0.0, 0.01]
+epochs = 25
+decay = true
+base_id = 70
 
 collect_measurements(
     layer=dense,
@@ -8,14 +12,19 @@ collect_measurements(
     dataset=wikitext2,
     width=0,
     depth=0,
-    lr=1e-3,
+    lr=2e-5,
     bs=8,
-    max_epochs=0,
-    max_bs=16,
-    id=90,
+    max_epochs=15,
+    max_bs=4,
+    lr_decay=false,
+    weight_decay=0.01,
+    id=base_id,
 )
 
-for rank in [768, 764, 760, 752, 736, 704, 640, 576, 512]
+
+
+for rank in [704, 640, 512, 384]
+# for rank in [128]
 
     collect_measurements(
         layer=lowrank,
@@ -23,11 +32,13 @@ for rank in [768, 764, 760, 752, 736, 704, 640, 576, 512]
         dataset=wikitext2,
         width=0,
         depth=0,
-        lr=1e-3,
+        lr=1e-5,
         bs=8,
-        max_epochs=0,
-        max_bs=16,
-        id=91,
+        max_epochs=25,
+        max_bs=4,
+        lr_decay=true,
+        weight_decay=0.01,
+        id=base_id+1,
         rank=rank
     )
 
@@ -37,12 +48,131 @@ for rank in [768, 764, 760, 752, 736, 704, 640, 576, 512]
         dataset=wikitext2,
         width=0,
         depth=0,
-        lr=1e-3,
+        lr=[2e-6, 1e-6],
         bs=8,
-        max_epochs=0,
-        max_bs=16,
-        id=92,
+        max_epochs=25,
+        max_bs=4,
+        lr_decay=true,
+        weight_decay=0.0,
+        id=base_id+2,
         rank=rank
     )
     
 end
+
+
+for rank in [128, 256, 384]
+
+    # collect_measurements(
+    #     layer=lowrank,
+    #     model=gpt2,
+    #     dataset=wikitext2,
+    #     width=0,
+    #     depth=0,
+    #     lr=5e-5,
+    #     bs=8,
+    #     max_epochs=40,
+    #     max_bs=4,
+    #     lr_decay=true,
+    #     weight_decay=[0.0, 0.01],
+    #     id=base_id+1,
+    #     rank=rank
+    # )
+
+    collect_measurements(
+        layer=lowranklight,
+        model=gpt2,
+        dataset=wikitext2,
+        width=0,
+        depth=0,
+        lr=[5e-6, 2e-5, 1e-6],
+        bs=8,
+        max_epochs=25,
+        max_bs=4,
+        lr_decay=false,
+        weight_decay=0.0,
+        id=base_id+7,
+        rank=rank
+    )
+
+    # +7 precise projection
+    
+end
+
+
+for n=[2, 4]
+
+    collect_measurements(
+        layer=monarch,
+        model=gpt2,
+        dataset=wikitext2,
+        width=0,
+        depth=0,
+        lr=[1e-4, 5e-5, 1e-5],
+        bs=8,
+        max_epochs=30,
+        max_bs=4,
+        lr_decay=true,
+        weight_decay=[0.0, 0.01, 0.02],
+        id=base_id+4,
+        nr_blocks=n
+    )
+end
+
+
+
+
+collect_measurements(
+    layer=unstructured,
+    model=gpt2,
+    dataset=wikitext2,
+    width=0,
+    depth=0,
+    lr=1e-5,
+    bs=8,
+    max_epochs=10,
+    max_bs=4,
+    lr_decay=true,
+    weight_decay=0.0,
+    id=base_id+5,
+    density=[50, 70]
+)
+
+
+
+collect_measurements(
+    layer=unstructured,
+    model=gpt2,
+    dataset=wikitext2,
+    width=0,
+    depth=0,
+    lr=[4e-5, 2e-5, 1e-5, 5e-6],
+    bs=8,
+    max_epochs=45,
+    max_bs=4,
+    lr_decay=decay,
+    weight_decay=0.0,
+    id=base_id+5,
+    density=30
+)
+
+
+
+collect_measurements(
+    layer=blast,
+    model=gpt2,
+    dataset=wikitext2,
+    width=0,
+    depth=0,
+    lr=[2e-5, 1e-5, 5e-6, 1e-6],
+    bs=8,
+    max_epochs=35,
+    max_bs=4,
+    lr_decay=false,
+    weight_decay=0.0,
+    id=base_id+8,
+    block_size=[128, 128, 128, 128],
+    rank=[512, 384, 256, 128]
+)
+
+

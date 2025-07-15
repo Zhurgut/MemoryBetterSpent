@@ -13,9 +13,8 @@ ssh-add ~/.ssh/cscs-key
 
 rsync src dest, e.g.
 rsync ./code/Kernels/info.cu dcamenis@ault:/users/dcamenis
-rsync -r ./code/Kernels/ dcamenis@ault:/users/dcamenis
 rsync -av dcamenis@ault:/users/dcamenis/measurements ./cscs_measurements/
-rsync -av ./code dcamenis@ault:/users/dcamenis
+rsync -av --exclude='cifar-10-batches-py' --exclude='*.gz' --exclude='*.ncu-rep' --exclude='*.so' --exclude='*.pyc' ./code dcamenis@ault:/users/dcamenis
 rsync -r ./job.sh dcamenis@ault:/users/dcamenis
 
 ssh ault
@@ -65,4 +64,4 @@ module load py-virtualenv
 ./local/python312/python3.12 -m venv $SCRATCH/.venv
 source $SCRATCH/.venv/bin/activate
 upgrade pip...
-pip install filelock torch torchvision torcheval datasets
+pip install filelock numpy torch torchvision torcheval datasets transformers

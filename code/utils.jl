@@ -13,6 +13,8 @@ function load_measurements_info(id, root_path=ROOT_DIR)
     df.dataset = parse_eval.(df.dataset)
     df.kwargs = parse_eval.(df.kwargs)
 
+    # df.id = fill(id, nrow(df))
+
     cols = [:nr_parameters, :best_train, :best_test, :epoch_of_best_train, :epoch_of_best_test]
     Ts   = [Int,            Float64,      Float64,   Int,                  Int]
 
@@ -29,6 +31,23 @@ function load_measurements_infos(ids, root_path)
     dfs = [load_measurements_info(id, root_path) for id in ids]
     df = vcat(dfs...)
     df
+end
+
+function load_data(id, measurement_id, root_path; run_id=1)
+    WD = pwd()
+
+    try
+        cd(joinpath(root_path, "measurements/$id"))
+
+        df = CSV.read("data/$measurement_id.csv", DataFrame)
+        df = df[df.run_id .== run_id, :]
+
+        cd(WD)
+
+        return df
+    catch e
+        cd(WD)
+    end
 end
 
 # "resize" and initialize to zero
