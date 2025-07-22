@@ -7,7 +7,8 @@ import os
 import csv
 from datetime import datetime
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 from transformers import AutoModel
 import torch
@@ -56,7 +57,7 @@ def model_matrix(size, index):
 def project(matrix, nr_runs, layer_fn, *args, nr_steps):
 
     out_dim, in_dim = matrix.shape
-    assert out_dim == in_dim  # for now
+    # assert out_dim == in_dim  # for now
 
     fn = nn.Linear(in_dim, out_dim)
     fn.weight = nn.Parameter(matrix.clone().detach())
@@ -98,7 +99,7 @@ def save_results(file_name, columns, *data_rows):
 def collect256(M, nr_runs, nr_steps):
     size = 256
     
-    assert M.shape == (size, size)
+    # assert M.shape == (size, size)
     
     args_unstructured = [1, 10, 30, 50, 75, 83, 88, 93, 97, 99]
     args_lowrank = [128, 96, 64, 48, 32, 16, 8, 4]
@@ -110,13 +111,11 @@ def collect256(M, nr_runs, nr_steps):
     # args_bttlight = [1, 4, 8, 12, 14, 15, 16]
     # args_btt2 = [(4, 1), (4, 2), (4, 4), (4, 5)]
     args_blocksparse = [(16, 1), (16, 2), (16, 3), (16, 4), (16, 6), (16, 11), (16, 15)]
-    args_blast = [(64, 8), (64, 32), (64, 64), (64, 96), (64, 112), (64, 120)]
-    args_blast2 = [(32, 8), (32, 32), (32, 64), (32, 96), (32, 104), (32, 112)]
-    args_blast3 = [(128, 8), (128, 32), (128, 64), (128, 96), (128, 112), (128, 120)]
-    args_noblast1 = [(32, 64), (32, 128), (32, 256), (32, 384), (32, 512)]
-    args_noblast2 = [(16, 64), (16, 128), (16, 160), (16, 192), (16, 224)]
-
-    args_theblast = [(32, 64), (32, 256), (32, 512), (32, 768), (32, 960), (32, 1024)]
+    args_blast = [(4, 8), (4, 32), (4, 64), (4, 96), (4, 112), (4, 120)]
+    args_blast2_paper = [(8, 32), (8, 96), (8, 120)]
+    # args_blast2 = [(8, 32), (8, 96), (8, 120)]
+    args_blast2 = [(32, 32), (32, 96), (32, 120)]
+    args_blast3 = [(2, 8), (2, 32), (2, 64), (2, 96), (2, 112), (2, 120)]
 
     results = []
 
@@ -191,9 +190,7 @@ def collect256(M, nr_runs, nr_steps):
 
     
 
-    run(args_monarch, Monarch, "monarch", nr_runs)
-
-    # run(args_noblast1, Noblast, "noblast8x8", nr_runs)
+    # run(args_monarch, Monarch, "monarch", nr_runs)
 
     # run(args_noblast2, Noblast, "noblast16x16", nr_runs)
 
@@ -204,10 +201,14 @@ def collect256(M, nr_runs, nr_steps):
     # run(args_tt, TT, "TT", nr_runs)
     # run(args_btt, BTT, "BTT", nr_runs)
 
+    # run(args_lowrank, SLTrain, "sltrain", 1)
+    # run(args_lowrank, SLTrainLight, "sltrain-light", 1)
+
     run(args_lowrank_light, LowRankLight, "lowrank_light", 1)
     
-    # run(args_blast2, Blast, "blast8x8", nr_runs)
-    
+    run(args_blast2_paper, BlastPaper, "paper_blast8x8", nr_runs)
+    run(args_blast2, Blast, "blast8x8", nr_runs)
+
     save_results("p256", ["layer", "op_norm", "nr_parameters"], *results)
     
 
@@ -280,7 +281,8 @@ def collect256(M, nr_runs, nr_steps):
     
     
     
-collect256(model_matrix(256, 2), 2, 5000)
+# collect256(model_matrix(256, 2), 2, 15000)
+collect256(torch.randn(512, 256), 1, 5000)
 # collect256(random_matrix_normal(256), 2, 5000)
 # collect729(model_matrix(729, 3), 3, 5000)
 
@@ -330,3 +332,20 @@ collect256(model_matrix(256, 2), 2, 5000)
 
 # l = to_dense(Monarch(64, 2))[2]
 # project(l, 1e-2, 1000, Monarch, 64)
+
+
+# l = nn.Linear(10, 40)
+# # b = Blast(10, 20, 2, 6)
+# b = Blast(10, 40, 5, 6)
+# # b = LowRankLight(10, 20, 9)
+# I = torch.eye(10, 10)
+# print((l(I) - b(I)).norm())
+# b.project(l)
+# print((l(I) - b(I)).norm())
+# print(nr_parameters(b) / nr_parameters(l))
+# b = BlastPaper(10, 40, 2, 8)
+# b.project(l)
+# print((l(I) - b(I)).norm())
+
+
+# print(nr_parameters(b) / nr_parameters(l))

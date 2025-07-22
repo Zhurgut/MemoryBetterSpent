@@ -3,6 +3,8 @@ using DataFrames
 
 parse_eval(x) = eval(Meta.parse(x))
 
+PLOTTING = false
+
 function load_measurements_info(id, root_path=ROOT_DIR)
     WD = pwd()
     cd(joinpath(root_path, "measurements/$id"))
@@ -13,7 +15,9 @@ function load_measurements_info(id, root_path=ROOT_DIR)
     df.dataset = parse_eval.(df.dataset)
     df.kwargs = parse_eval.(df.kwargs)
 
-    # df.id = fill(id, nrow(df))
+    if PLOTTING
+        df.id = fill(id, nrow(df))
+    end
 
     cols = [:nr_parameters, :best_train, :best_test, :epoch_of_best_train, :epoch_of_best_test]
     Ts   = [Int,            Float64,      Float64,   Int,                  Int]

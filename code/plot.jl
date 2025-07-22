@@ -5,6 +5,8 @@ using DataFrames, Plots
 include("run.jl")
 include("utils.jl")
 
+PLOTTING = true
+
 function density(layer::Layer, width, kwargs)
     if width == 0
         width=768 # hack for gpt2
