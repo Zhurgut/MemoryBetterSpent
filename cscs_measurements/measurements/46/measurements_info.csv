@@ -1,4 +1,7 @@
 layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
 blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 32)",vit2,192,9,0.002,256,1600,0.02,1.0,0.1,1,tiny_imagenet,true,false,1000,1,true,801416,0.6082899570465088,0.5128999948501587,1571,1469
 blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.002,256,1600,0.02,1.0,0.1,2,tiny_imagenet,true,false,1000,1,true,1323272,0.7005000114440918,0.560699999332428,1591,1548
-blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 80)",vit2,192,9,0.002,256,1600,0.02,1.0,0.1,3,tiny_imagenet,true,false,1000,1,false,,,,,
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 80)",vit2,192,9,0.002,256,1600,0.02,1.0,0.1,3,tiny_imagenet,true,false,1000,1,true,1845128,0.7538599967956543,0.5690000057220459,1591,1452
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 32)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,4,tiny_imagenet,true,false,1000,1,true,801416,0.6155399680137634,0.5174999833106995,1601,1567
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,5,tiny_imagenet,true,false,1000,1,true,1323272,0.6592699885368347,0.5309999585151672,1541,1484
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 80)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,6,tiny_imagenet,true,false,1000,1,false,,,,,

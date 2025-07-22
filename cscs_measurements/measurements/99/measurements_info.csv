@@ -1,0 +1,8 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+blast,"(block_size = 128, rank = 512)",gpt2,1,1000,1.0e-5,8,0,0.0,1.0,0.2,1,wikitext2,false,true,4,1,true,117656832,1000.0,1.553689e6,1,1
+blast,"(block_size = 128, rank = 384)",gpt2,1,1000,1.0e-5,8,0,0.0,1.0,0.2,2,wikitext2,false,true,4,1,true,98118912,1000.0,1.468226e6,1,1
+blast,"(block_size = 128, rank = 256)",gpt2,1,1000,1.0e-5,8,0,0.0,1.0,0.2,3,wikitext2,false,true,4,1,true,78580992,1000.0,881818.125,1,1
+blast,"(block_size = 128, rank = 128)",gpt2,1,1000,1.0e-5,8,0,0.0,1.0,0.2,4,wikitext2,false,true,4,1,true,59043072,1000.0,850236.625,1,1
+blast,"(block_size = 128, rank = 512)",gpt2,1,5000,1.0e-5,8,0,0.0,1.0,0.2,5,wikitext2,false,true,4,1,true,117656832,1000.0,1.641787e6,1,1
+blast,"(block_size = 128, rank = 384)",gpt2,1,5000,1.0e-5,8,0,0.0,1.0,0.2,6,wikitext2,false,true,4,1,true,98118912,1000.0,1.926338125e6,1,1
+blast,"(block_size = 128, rank = 256)",gpt2,1,5000,1.0e-5,8,0,0.0,1.0,0.2,7,wikitext2,false,true,4,1,false,,,,,
