@@ -105,3 +105,46 @@ function generate_ds()
 
     return P
 end
+
+
+
+
+
+
+function project(M, rank)
+    display(M)
+    U, S, V = svd(M)
+    U, S, Vh = U[:, 1:rank], S[1:rank], V[:, 1:rank]'
+    M1 = M[:, 1:rank]
+    M2 = M[:, rank+1:end]
+    display(U * diagm(S) * Vh)
+    # try 
+    #     B1 = Vh[:, 1:rank]
+    #     A = U * diagm(S) * B1
+    #     B = inv(B1) * Vh[:, rank+1:end]
+    #     display(M - [A A*B])
+    #     return [A A*B], norm(A - M[:, 1:rank]), norm(A*B - M[:, rank+1:end])
+    # catch e end
+
+    R = randn(size(U, 1), rank)
+
+    for i = 1:30
+
+        B = pinv((M1 + R)' * (M1 + R)) * (M1 + R)' * M2
+        A = M1 + R
+
+        println(norm(A - M1), ", ", norm(A*B - M2))
+
+        R = (M2*B' - M1*B*B') * inv(B*B' + I)
+
+    end
+
+    α = tr(R' * (M1 * B - M2) * B') / (norm(R)^2 + norm(R*B)^2)
+
+    A = M1 + α*R
+    B = pinv(A) * M2
+
+    println(α)
+    println("hi", norm(A - M1), ", ", norm(A*B - M2))
+
+end

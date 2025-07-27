@@ -1,0 +1,20 @@
+mkdir -p $SCRATCH/local/python312
+cd local
+wget https://www.python.org/ftp/python/3.12.0/Python-3.12.0.tgz
+tar -xvzf Python-3.12.0.tgz
+cd Python-3.12.0
+
+module load gcc
+module load libffi
+
+./configure --prefix=$SCRATCH/local/python312 --enable-optimizations
+make -j$(nproc)
+make install
+
+add this to .bashrc
+export PATH="$SCRATCH/local/python312/bin:$PATH"
+
+python3.12 -m venv $SCRATCH/.venv
+source $SCRATCH/.venv/bin/activate
+pip install --upgrade pip
+pip install filelock numpy torch torchvision torcheval datasets transformers hf_xet
