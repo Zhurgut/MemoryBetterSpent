@@ -1,0 +1,32 @@
+\begin{table}[h!]
+\centering
+\tiny
+\caption{FineTuning GPT-2 on wikitext-2}
+\label{tab:ft_results}
+\begin{tabular}{llcccrrl}
+$\text{layer type}$ & $\text{layer parameters}$ & $\text{learning rate}$ & $\text{weight decay}$ & $\text{lr-decay}$ & $\text{nr of epochs}$ & $\text{nr of parameters}$ & $\text{perplexity}$\\
+$\text{dense}$ & $\text{}$ & $2.0e-5$ & $0.01$ & $false$ & $15$ & $124439808$ & $18.261831283569336$\\
+$\text{lowrank}$ & $\text{(rank = 704,)}$ & $1.0e-5$ & $0.01$ & $true$ & $25$ & $143314176$ & $19.910972595214844$\\
+$\text{lowrank}$ & $\text{(rank = 640,)}$ & $1.0e-5$ & $0.01$ & $true$ & $25$ & $133876992$ & $20.991209030151367$\\
+$\text{lowrank}$ & $\text{(rank = 512,)}$ & $1.0e-5$ & $0.01$ & $true$ & $25$ & $115002624$ & $26.67424964904785$\\
+$\text{lowrank}$ & $\text{(rank = 128,)}$ & $5.0e-5$ & $0.0$ & $true$ & $40$ & $58379520$ & $86.4153823852539$\\
+$\text{lowrank}$ & $\text{(rank = 256,)}$ & $5.0e-5$ & $0.01$ & $true$ & $40$ & $77253888$ & $46.95144271850586$\\
+$\text{lowrank}$ & $\text{(rank = 384,)}$ & $1.0e-5$ & $0.01$ & $true$ & $25$ & $96128256$ & $34.70950698852539$\\
+$\text{lowranklight}$ & $\text{(rank = 704,)}$ & $1.0e-6$ & $0.0$ & $true$ & $25$ & $119524608$ & $21.35967445373535$\\
+$\text{lowranklight}$ & $\text{(rank = 640,)}$ & $2.0e-6$ & $0.0$ & $true$ & $25$ & $114216192$ & $22.550024032592773$\\
+$\text{lowranklight}$ & $\text{(rank = 512,)}$ & $1.0e-6$ & $0.0$ & $true$ & $25$ & $102419712$ & $31.657848358154297$\\
+$\text{lowranklight}$ & $\text{(rank = 128,)}$ & $5.0e-6$ & $0.0$ & $false$ & $25$ & $57593088$ & $216.97361755371094$\\
+$\text{lowranklight}$ & $\text{(rank = 256,)}$ & $1.0e-6$ & $0.0$ & $true$ & $80$ & $74108160$ & $131.7919464111328$\\
+$\text{lowranklight}$ & $\text{(rank = 384,)}$ & $1.0e-6$ & $0.0$ & $false$ & $25$ & $89050368$ & $63.8720817565918$\\
+$\text{monarch}$ & $\text{(nr\_blocks = 2,)}$ & $0.0001$ & $0.02$ & $true$ & $30$ & $82138368$ & $134.29881286621094$\\
+$\text{monarch}$ & $\text{(nr\_blocks = 4,)}$ & $0.0001$ & $0.01$ & $true$ & $30$ & $61070592$ & $157.80079650878906$\\
+$\text{unstructured}$ & $\text{(density = 50,)}$ & $1.0e-5$ & $0.0$ & $true$ & $10$ & $81972530$ & $27.507896423339844$\\
+$\text{unstructured}$ & $\text{(density = 70,)}$ & $1.0e-5$ & $0.0$ & $true$ & $10$ & $98959441$ & $19.877168655395508$\\
+$\text{unstructured}$ & $\text{(density = 30,)}$ & $5.0e-5$ & $0.005$ & $true$ & $40$ & $64985570$ & $67.23201751708984$\\
+$\text{blast}$ & $\text{(block\_size = 128, rank = 512)}$ & $1.0e-5$ & $0.0$ & $false$ & $25$ & $117656832$ & $20.429224014282227$\\
+$\text{blast}$ & $\text{(block\_size = 128, rank = 384)}$ & $1.0e-5$ & $0.0$ & $false$ & $25$ & $98118912$ & $26.74557876586914$\\
+$\text{blast}$ & $\text{(block\_size = 128, rank = 256)}$ & $2.0e-5$ & $0.0$ & $false$ & $25$ & $78580992$ & $45.35032653808594$\\
+$\text{blast}$ & $\text{(block\_size = 128, rank = 128)}$ & $2.0e-5$ & $0.0$ & $false$ & $25$ & $59043072$ & $96.28560638427734$\\
+\end{tabular}
+
+\end{table}

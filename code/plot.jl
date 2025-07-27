@@ -389,17 +389,16 @@ function plot_projection_results(filename)
     # Group by label (no aggregation, just to separate the data for each label)
     grouped_df = groupby(df, :layer)
 
-    # Create the plot
     p = plot(size=(800, 600))  # Initialize the plot
 
     # Loop through each group (each label) and plot it
     for group in grouped_df
         label_name = group[1, :layer]  # Get the label for the group
-        plot!(p, group.nr_parameters, group.op_norm, label=label_name, xlabel="nr parameters\n", ylabel="\nFrobenius Norm || W - W' ||")
+        plot!(p, group.nr_parameters, group.norm, label=label_name, xlabel="nr parameters\n", ylabel="\nFrobenius Norm || W - W' ||")
     end
 
     # Display the plot
-    savefig(filename * ".svg")
+    # savefig(filename * ".svg")
 
     p
 end

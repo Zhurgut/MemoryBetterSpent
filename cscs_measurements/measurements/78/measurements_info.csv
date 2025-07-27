@@ -11,5 +11,3 @@ blast,"(block_size = 128, rank = 256)",gpt2,0,0,5.0e-5,8,45,0.005,1.0,0.2,9,wiki
 blast,"(block_size = 128, rank = 256)",gpt2,0,0,2.0e-5,8,45,0.005,1.0,0.2,10,wikitext2,true,true,4,1,true,78580992,24.542184829711914,46.891963958740234,41,18
 blast,"(block_size = 128, rank = 128)",gpt2,0,0,5.0e-5,8,45,0.005,1.0,0.2,11,wikitext2,true,true,4,1,true,59043072,41.369300842285156,98.69542694091797,41,12
 blast,"(block_size = 128, rank = 128)",gpt2,0,0,2.0e-5,8,45,0.005,1.0,0.2,12,wikitext2,true,true,4,1,true,59043072,66.06874084472656,106.68301391601562,41,20
-blast,"(block_size = 128, rank = 256)",gpt2,0,0,6.0e-6,8,40,0.0,1.0,0.2,13,wikitext2,false,true,4,1,false,,,,,
-blast,"(block_size = 128, rank = 256)",gpt2,0,0,3.0e-6,8,40,0.0,1.0,0.2,14,wikitext2,false,true,4,1,false,,,,,

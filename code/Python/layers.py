@@ -329,79 +329,51 @@ class LowRankLight(Projectable):
         self.A = nn.Parameter(out_U)
         self.B = nn.Parameter(out_V)
 
+
+        # print(self.A.abs().max(), " + ", self.B.abs().max())
+
         self.bias = nn.Parameter(fn.bias.clone().detach())
 
-    def project_regularized(self, fn):
+    def project_regularized(self, fn, l=1e-3):
 
         out_dim, in_dim = fn.weight.shape
         assert self.in_dim == in_dim and self.out_dim == out_dim
 
         rank = self.rank
 
+        U, S, Vt = torch.linalg.svd(fn.weight)
+        S = torch.diag(S)
+
+        A = U[:, :rank] @ S[:rank, :rank]
+        v = Vt[:rank, :]
+        B1 = v[:, :rank]
+        B2 = v[:, rank:]
+
+        out_A = A @ B1
+
         W1 = fn.weight[:, :rank]
         W2 = fn.weight[:, rank:]
 
-        # solve W1*B = W2 with ridge regression
-        h = 1e-5 * torch.trace(W1.T @ W1) / rank
-        out_V = torch.linalg.solve(
-            W1.T @ W1 + h * torch.eye(rank, rank, device=W1.device), W1.T @ W2
+        # solve A*B = W2 with ridge regression
+        h = l * torch.trace(out_A.T @ out_A) / rank
+        out_B = torch.linalg.solve(
+            out_A.T @ out_A + h * torch.eye(rank, rank, device=out_A.device), out_A.T @ W2
         )
 
-        self.A = nn.Parameter(W1)
-        self.B = nn.Parameter(out_V)
+        self.A = nn.Parameter(out_A)
+        self.B = nn.Parameter(out_B)
+
+        # print(self.A.abs().max(), " - ", self.B.abs().max())
+
 
         self.bias = nn.Parameter(fn.bias.clone().detach())
 
-    def project_GD(self, fn):
 
-        out_dim, in_dim = fn.weight.shape
-        assert self.in_dim == in_dim and self.out_dim == out_dim
-
-        rank = self.rank
-
-        W1 = fn.weight[:, :rank]
-        W2 = fn.weight[:, rank:]
-
-        # A = nn.Parameter(  (W1.clone() + torch.randn(W1.size(), device=W1.device)).detach() )
-        # B = nn.Parameter(  (torch.linalg.pinv(A) @ W2).detach()  )
-
-        A = nn.Parameter(torch.randn(W1.size(), device=W1.device))
-        B = nn.Parameter(torch.randn(rank, self.in_dim - rank, device=W1.device))
-
-        m, k = A.shape
-        K, n = B.shape
-
-        lr = 1e-2
-        nr_steps = 15000
-
-        opt = torch.optim.AdamW([A, B], lr=lr, weight_decay=0.001)
-
-        x = fn.weight.abs().max()
-
-        for i in range(nr_steps):
-
-            opt.zero_grad()
-
-            loss = (A - W1).norm().square() / (m * k) + (A @ B - W2).norm().square() / (
-                K * n
-            )
-
-            loss.backward()
-
-            opt.step()
-
-            if B.abs().max() > 2 * x:
-                break
-
-        self.A = nn.Parameter(A.clone().detach())
-        self.B = nn.Parameter(B.clone().detach())
-
-        self.bias = nn.Parameter(fn.bias.clone().detach())
 
     def project(self, fn):
 
-        self.project_precise(fn)
-        # self.project_regularized(fn)
+        # self.project_precise(fn)
+        self.project_regularized(fn)
         # self.project_GD(fn) # not work well
 
 

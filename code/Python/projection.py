@@ -96,6 +96,14 @@ def save_results(file_name, columns, *data_rows):
     os.chdir(WD)
 
 
+us_pfn = lambda p : f"density={p}%"
+lr_pfn = lambda r : f"rank={r}"
+lrl_pfn = lr_pfn
+mn_pfn = lambda p : f"nr_blocks={p}"
+tt_pfn = lambda p : f"{p[0]} cores, rank={p[1]}"
+btt_pfn = tt_pfn
+bst_pfn = lambda p : f"block_size={p[0]}, rank={p[1]}"
+
 def collect256(M, nr_runs, nr_steps):
     size = 256
     
@@ -119,27 +127,37 @@ def collect256(M, nr_runs, nr_steps):
 
     results = []
 
-    def run(args, fn, label, nr_runs):
+    def run(args, fn, label, nr_runs, pfn):
     
-        def add_label(label, data):
-            return [(label, score, nparams) for (score, nparams) in data]
+        def add_label(label, data, pfn, arg):
+            score, nparams = data
+            return (label, score, nparams, pfn(arg))
 
         print(label)
         out = None
         if not isinstance(args[0], tuple):
             out = [
-                project(M, nr_runs, fn, args[i], nr_steps=nr_steps)
+                add_label(
+                    label, 
+                    project(M, nr_runs, fn, args[i], nr_steps=nr_steps),
+                    pfn,
+                    args[i]
+                )
                 for i in range(len(args))
             ]
         else:
             out = [
-                project(M, nr_runs, fn, *(args[i]), nr_steps=nr_steps)
+                add_label(
+                    label,
+                    project(M, nr_runs, fn, *(args[i]), nr_steps=nr_steps),
+                    pfn,
+                    args[i]
+                )
                 for i in range(len(args))
             ]
         
-        out.sort(key=lambda x: x[1]) # sort by nr parameters
+        out.sort(key=lambda x: x[2]) # sort by nr parameters
 
-        out = add_label(label, out)
         results.append(out)
     
     # args_unstructured = [0.95, 0.7, 0.4]
@@ -179,9 +197,9 @@ def collect256(M, nr_runs, nr_steps):
     #     for i in range(len(args_unstructured))
     # ]
     # unstructured = add_label("unstructured", unstructured)
-    run(args_unstructured, Unstructured, "unstructured, magnitude pruned", 1)
+    run(args_unstructured, Unstructured, "unstructured, magnitude pruned", 1, us_pfn)
     
-    run(args_lowrank, LowRank, "lowrank", 1)
+    run(args_lowrank, LowRank, "lowrank", 1, lr_pfn)
     
     # svd = torch.linalg.svdvals(M)
     # lowrank_opt = [("LowRankOpt", sum(svd[rank:].pow(2)).sqrt().item(), nr_parameters(LowRank(size, size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
@@ -204,12 +222,12 @@ def collect256(M, nr_runs, nr_steps):
     # run(args_lowrank, SLTrain, "sltrain", 1)
     # run(args_lowrank, SLTrainLight, "sltrain-light", 1)
 
-    run(args_lowrank_light, LowRankLight, "lowrank_light", 1)
+    run(args_lowrank_light, LowRankLight, "lowrank_light", 1, lrl_pfn)
     
-    run(args_blast2_paper, BlastPaper, "paper_blast8x8", nr_runs)
-    run(args_blast2, Blast, "blast8x8", nr_runs)
+    # run(args_blast2_paper, BlastPaper, "paper_blast8x8", nr_runs)
+    # run(args_blast2, Blast, "blast8x8", nr_runs, bst_pfn)
 
-    save_results("p256", ["layer", "op_norm", "nr_parameters"], *results)
+    save_results("p256", ["layer", "norm", "nr_parameters", "spec"], *results)
     
 
 
@@ -282,8 +300,8 @@ def collect256(M, nr_runs, nr_steps):
     
     
 # collect256(model_matrix(256, 2), 2, 15000)
-collect256(torch.randn(512, 256), 1, 5000)
-# collect256(random_matrix_normal(256), 2, 5000)
+# collect256(torch.randn(512, 256), 1, 5000)
+collect256(random_matrix_normal(256), 2, 5000)
 # collect729(model_matrix(729, 3), 3, 5000)
 
 # project(torch.randn(64, 64), torch.rand(64), 1, LowRank, 48)
