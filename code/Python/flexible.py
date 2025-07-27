@@ -51,21 +51,46 @@ def alpha(A, B, M):
 
 # flex()
 
+torch.manual_seed(18)
 
-m = torch.Tensor([
-    [2, 2, 4], 
-    [1, 1, 2], 
-    [2, 2.0, -1]])
-
-l = nn.Linear(3, 3)
+l = nn.Linear(1024, 1024)
 with torch.no_grad():
     l.bias *= 0
+r = LowRankLight(1024, 1024, 256)
+# l.weight = nn.Parameter(1e-3 * l.weight)
 
-f = LowRankLight(3, 3, 2)
-l.weight = nn.Parameter(m)
-f.project(l)
 
-print(m.T)
-print(f(torch.eye(3, 3)))
-print(f.A)
-print(f.B)
+r.project_regularized(l, 1e-0)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_regularized(l, 1e-1)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_regularized(l, 1e-2)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_regularized(l, 1e-3)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_regularized(l, 1e-4)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_regularized(l, 1e-5)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_regularized(l, 1e-6)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_regularized(l, 1e-7)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+r.project_precise(l)
+print((l.weight.T - r(torch.eye(1024, 1024))).norm())
+
+# from layers import *
+# l = Blast(200, 250, 50, 50)
+# m = nn.Linear(200, 250)
+# # l.project(m)
+# l = Blast(200, 250, 50, 50)
+# l.precGD(m.weight)
+

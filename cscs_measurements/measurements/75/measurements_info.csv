@@ -7,3 +7,6 @@ unstructured,"(density = 30,)",gpt2,0,0,4.0e-5,8,45,0.0,1.0,0.2,5,wikitext2,true
 unstructured,"(density = 30,)",gpt2,0,0,2.0e-5,8,45,0.0,1.0,0.2,6,wikitext2,true,true,4,1,true,64985570,50.473167419433594,71.49525451660156,41,35
 unstructured,"(density = 30,)",gpt2,0,0,1.0e-5,8,45,0.0,1.0,0.2,7,wikitext2,true,true,4,1,true,64985570,62.74289321899414,77.80939483642578,41,37
 unstructured,"(density = 30,)",gpt2,0,0,5.0e-6,8,45,0.0,1.0,0.2,8,wikitext2,true,true,4,1,true,64985570,75.1158447265625,85.79833984375,41,45
+unstructured,"(density = 30,)",gpt2,0,0,0.0002,8,40,0.005,1.0,0.2,9,wikitext2,true,true,4,1,true,64985570,16.570371627807617,68.44369506835938,41,4
+unstructured,"(density = 30,)",gpt2,0,0,0.0001,8,40,0.005,1.0,0.2,10,wikitext2,true,true,4,1,true,64985570,23.933380126953125,67.88624572753906,41,8
+unstructured,"(density = 30,)",gpt2,0,0,5.0e-5,8,40,0.005,1.0,0.2,11,wikitext2,true,true,4,1,true,64985570,35.136077880859375,67.23201751708984,41,22
