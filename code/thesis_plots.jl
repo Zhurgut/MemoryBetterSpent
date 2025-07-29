@@ -180,7 +180,7 @@ projection_stuff("p256_0724_1913.csv", "projection", "projection_table")
 fine_tuning_stuff("gpt2_results", "gpt2_results_table")
 
 
-
-plot_best([70, 71, 72, 74, 75, 77, 78, 79, 80], joinpath(ROOT_DIR, "cscs_measurements/"))
+plot_best([70, 71, 72, 74, 75, 77, 78, 79], joinpath(ROOT_DIR, "cscs_measurements/"))
+plot_best([70, 71, 72, 74, 75, 77, 78, 79, 80, 81], joinpath(ROOT_DIR, "cscs_measurements/"))
 
 plot_best([40, 41, 42, 43, 47], joinpath(ROOT_DIR, "cscs_measurements/"))

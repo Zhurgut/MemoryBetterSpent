@@ -334,7 +334,7 @@ class LowRankLight(Projectable):
 
         self.bias = nn.Parameter(fn.bias.clone().detach())
 
-    def project_regularized(self, fn, l=1e-3):
+    def project_regularized(self, fn, l=3e-3):
 
         out_dim, in_dim = fn.weight.shape
         assert self.in_dim == in_dim and self.out_dim == out_dim
