@@ -1,0 +1,17 @@
+layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measurement_id,dataset,lr_decay,early_stop,max_bs,nr_runs,done,nr_parameters,best_train,best_test,epoch_of_best_train,epoch_of_best_test
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.001,256,100,0.01,1.0,0.1,1,tiny_imagenet,true,false,1000,1,true,2426696,0.49229997396469116,0.41990000009536743,101,98
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.001,256,100,0.02,1.0,0.1,2,tiny_imagenet,true,false,1000,1,true,2426696,0.4940199851989746,0.4196999967098236,101,92
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,100,0.01,1.0,0.1,3,tiny_imagenet,true,false,1000,1,true,2426696,0.5097100138664246,0.4359000027179718,101,95
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,100,0.02,1.0,0.1,4,tiny_imagenet,true,false,1000,1,true,2426696,0.5105000138282776,0.4391999840736389,101,100
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0006,256,100,0.01,1.0,0.1,5,tiny_imagenet,true,false,1000,1,true,2426696,0.5137699842453003,0.430899977684021,91,91
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0006,256,100,0.02,1.0,0.1,6,tiny_imagenet,true,false,1000,1,true,2426696,0.5134299993515015,0.4366999864578247,101,93
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,300,0.02,1.0,0.1,7,tiny_imagenet,true,false,1000,1,true,2426696,0.647350013256073,0.5102999806404114,301,288
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,300,0.04,1.0,0.1,8,tiny_imagenet,true,false,1000,1,true,2426696,0.6413499712944031,0.5131999850273132,301,286
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0006,256,300,0.02,1.0,0.1,9,tiny_imagenet,true,false,1000,1,true,2426696,0.669510006904602,0.5115999579429626,291,299
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0006,256,300,0.04,1.0,0.1,10,tiny_imagenet,true,false,1000,1,true,2426696,0.6567400097846985,0.5128999948501587,281,271
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.00045,256,300,0.02,1.0,0.1,11,tiny_imagenet,true,false,1000,1,true,2426696,0.6649199724197388,0.5038999915122986,301,285
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.00045,256,300,0.04,1.0,0.1,12,tiny_imagenet,true,false,1000,1,true,2426696,0.655460000038147,0.5076999664306641,301,282
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,1600,0.04,1.0,0.1,13,tiny_imagenet,true,false,1000,1,true,2426696,0.8714099526405334,0.6140999794006348,1591,1549
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,1600,0.06,1.0,0.1,14,tiny_imagenet,true,false,1000,1,true,2426696,0.8328999876976013,0.6087999939918518,1561,1489
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,1600,0.02,1.0,0.1,15,tiny_imagenet,true,false,1000,1,true,2426696,0.8909099698066711,0.599399983882904,1591,1518
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0006,256,1600,0.02,1.0,0.1,16,tiny_imagenet,true,false,1000,1,true,2426696,0.9172099828720093,0.6101999878883362,1591,1540

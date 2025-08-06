@@ -1,0 +1,21 @@
+\begin{sidewaystable}[h!]
+\centering
+\tiny
+\caption{PreTraining ViTs on Tiny-Imagenet}
+\label{tab:pt_results}
+\begin{tabular}{llcccrrl}
+$\text{layer type}$ & $\text{layer parameters}$ & $\text{learning rate}$ & $\text{weight decay}$ & $\text{lr-decay}$ & $\text{nr of epochs}$ & $\text{nr of parameters}$ & $\text{accuracy}$\\
+$\text{dense}$ & $\text{(patch\_size = 8, nr\_heads = 12)}$ & $0.001$ & $0.05$ & $true$ & $1600$ & $2428040$ & $0.6186000108718872$\\
+$\text{lowrank}$ & $\text{(patch\_size = 8, nr\_heads = 12, rank = 96)}$ & $0.001$ & $0.02$ & $true$ & $1600$ & $2096264$ & $0.5867999792098999$\\
+$\text{lowrank}$ & $\text{(patch\_size = 8, nr\_heads = 12, rank = 48)}$ & $0.001$ & $0.03$ & $true$ & $1600$ & $1100936$ & $0.5661999583244324$\\
+$\text{lowrank}$ & $\text{(patch\_size = 8, nr\_heads = 12, rank = 128)}$ & $0.001$ & $0.03$ & $true$ & $1600$ & $2759816$ & $0.5995000004768372$\\
+$\text{lowrank}$ & $\text{(patch\_size = 8, nr\_heads = 12, rank = 24)}$ & $0.001$ & $0.03$ & $true$ & $1600$ & $603272$ & $0.503600001335144$\\
+$\text{lowranklight}$ & $\text{(patch\_size = 8, nr\_heads = 12, rank = 96)}$ & $0.001$ & $0.02$ & $true$ & $1600$ & $1681544$ & $0.5941999554634094$\\
+$\text{lowranklight}$ & $\text{(patch\_size = 8, nr\_heads = 12, rank = 48)}$ & $0.001$ & $0.02$ & $true$ & $1600$ & $997256$ & $0.5570999979972839$\\
+$\text{lowranklight}$ & $\text{(patch\_size = 8, nr\_heads = 12, rank = 24)}$ & $0.001$ & $0.02$ & $true$ & $1600$ & $577352$ & $0.49619999527931213$\\
+$\text{blast}$ & $\text{(patch\_size = 8, nr\_heads = 12, block\_size = 48, rank = 32)}$ & $0.003$ & $0.02$ & $true$ & $1600$ & $801416$ & $0.5166000127792358$\\
+$\text{blast}$ & $\text{(patch\_size = 8, nr\_heads = 12, block\_size = 48, rank = 56)}$ & $0.003$ & $0.02$ & $true$ & $1600$ & $1323272$ & $0.5537999868392944$\\
+$\text{blast}$ & $\text{(patch\_size = 8, nr\_heads = 12, block\_size = 48, rank = 80)}$ & $0.003$ & $0.02$ & $true$ & $1600$ & $1845128$ & $0.5612999796867371$\\
+\end{tabular}
+
+\end{sidewaystable}

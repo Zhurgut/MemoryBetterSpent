@@ -43,7 +43,7 @@ LAYERS = {
     "kron": layers.Kronecker,
     "kronecker": layers.Kronecker,
     "tt": layers.TT,
-    "btt": layers.BTT,
+    "btt": layers.BTT2,
     "blast": layers.Blast,
     "unstructured": layers.Unstructured
 }
@@ -132,6 +132,7 @@ def main():
     model_fn = MODELS[args.model]
     dataset = DATASETS[args.dataset](args.batch_size, args.max_bs)
     in_dim, out_dim, image_dim, _, _, _, _, _, _, _ = dataset
+    # in_dim, out_dim, image_dim = 64*64*3, 200, 64
 
     p = args.dropout
     
@@ -146,7 +147,7 @@ def main():
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["rank"], p=p)  
         elif layer_fn is layers.Monarch:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["nr_blocks"], p=p)
-        elif layer_fn is layers.TT or layer_fn is layers.BTT:
+        elif layer_fn is layers.TT or layer_fn is layers.BTT2:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["nr_cores"], params["rank"], p=p)
         elif layer_fn is layers.Blast:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["block_size"], params["rank"], p=p)
@@ -159,7 +160,7 @@ def main():
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["rank"], dropout_p=p)  
         elif layer_fn is layers.Monarch:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_blocks"], dropout_p=p)
-        elif layer_fn is layers.TT or layer_fn is layers.BTT:
+        elif layer_fn is layers.TT or layer_fn is layers.BTT2:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_cores"], params["rank"], dropout_p=p)
         elif layer_fn is layers.Blast:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["block_size"], params["rank"], dropout_p=p)
@@ -173,7 +174,7 @@ def main():
             model = model_fn(layer_fn, params["rank"])  
         elif layer_fn is layers.Monarch:
             model = model_fn(layer_fn, params["nr_blocks"])
-        elif layer_fn is layers.TT or layer_fn is layers.BTT:
+        elif layer_fn is layers.TT or layer_fn is layers.BTT2:
             model = model_fn(layer_fn, params["nr_cores"], params["rank"])
         elif layer_fn is layers.Blast:
             model = model_fn(layer_fn, params["block_size"], params["rank"])
@@ -183,6 +184,14 @@ def main():
             model = model_fn(layer_fn)
         
         is_gpt2 = True
+    
+
+
+    # with torch.no_grad():
+    #     model(torch.rand(1, 3, 64, 64))
+
+    # print(nr_parameters(model))
+    # exit()
 
 
     training_losses, training_accuracies, test_losses, test_accuracies, times = train(

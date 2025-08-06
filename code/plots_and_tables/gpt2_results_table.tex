@@ -1,4 +1,4 @@
-\begin{table}[h!]
+\begin{sidewaystable}[h!]
 \centering
 \tiny
 \caption{FineTuning GPT-2 on wikitext-2}
@@ -12,12 +12,12 @@ $\text{lowrank}$ & $\text{(rank = 512,)}$ & $1.0e-5$ & $0.01$ & $true$ & $25$ & 
 $\text{lowrank}$ & $\text{(rank = 128,)}$ & $5.0e-5$ & $0.0$ & $true$ & $40$ & $58379520$ & $86.4153823852539$\\
 $\text{lowrank}$ & $\text{(rank = 256,)}$ & $5.0e-5$ & $0.01$ & $true$ & $40$ & $77253888$ & $46.95144271850586$\\
 $\text{lowrank}$ & $\text{(rank = 384,)}$ & $1.0e-5$ & $0.01$ & $true$ & $25$ & $96128256$ & $34.70950698852539$\\
-$\text{lowranklight}$ & $\text{(rank = 704,)}$ & $1.0e-6$ & $0.0$ & $true$ & $25$ & $119524608$ & $21.35967445373535$\\
-$\text{lowranklight}$ & $\text{(rank = 640,)}$ & $2.0e-6$ & $0.0$ & $true$ & $25$ & $114216192$ & $22.550024032592773$\\
-$\text{lowranklight}$ & $\text{(rank = 512,)}$ & $1.0e-6$ & $0.0$ & $true$ & $25$ & $102419712$ & $31.657848358154297$\\
-$\text{lowranklight}$ & $\text{(rank = 128,)}$ & $5.0e-6$ & $0.0$ & $false$ & $25$ & $57593088$ & $216.97361755371094$\\
-$\text{lowranklight}$ & $\text{(rank = 256,)}$ & $1.0e-6$ & $0.0$ & $true$ & $80$ & $74108160$ & $131.7919464111328$\\
-$\text{lowranklight}$ & $\text{(rank = 384,)}$ & $1.0e-6$ & $0.0$ & $false$ & $25$ & $89050368$ & $63.8720817565918$\\
+$\text{lowranklight}$ & $\text{(rank = 704,)}$ & $5.0e-6$ & $0.0$ & $true$ & $25$ & $119524608$ & $19.818578720092773$\\
+$\text{lowranklight}$ & $\text{(rank = 640,)}$ & $5.0e-6$ & $0.0$ & $true$ & $25$ & $114216192$ & $21.17198371887207$\\
+$\text{lowranklight}$ & $\text{(rank = 512,)}$ & $1.0e-5$ & $0.0$ & $true$ & $25$ & $102419712$ & $28.553564071655273$\\
+$\text{lowranklight}$ & $\text{(rank = 128,)}$ & $2.0e-5$ & $0.0$ & $false$ & $25$ & $57593088$ & $101.78114318847656$\\
+$\text{lowranklight}$ & $\text{(rank = 256,)}$ & $2.0e-5$ & $0.0$ & $false$ & $25$ & $74108160$ & $57.731502532958984$\\
+$\text{lowranklight}$ & $\text{(rank = 384,)}$ & $2.0e-5$ & $0.0$ & $false$ & $25$ & $89050368$ & $42.76621627807617$\\
 $\text{monarch}$ & $\text{(nr\_blocks = 2,)}$ & $0.0002$ & $0.0$ & $false$ & $30$ & $82138368$ & $132.8842010498047$\\
 $\text{monarch}$ & $\text{(nr\_blocks = 4,)}$ & $0.0001$ & $0.01$ & $true$ & $30$ & $61070592$ & $157.80079650878906$\\
 $\text{unstructured}$ & $\text{(density = 50,)}$ & $1.0e-5$ & $0.0$ & $true$ & $10$ & $81972530$ & $27.507896423339844$\\
@@ -29,4 +29,4 @@ $\text{blast}$ & $\text{(block\_size = 128, rank = 256)}$ & $6.0e-6$ & $0.0$ & $
 $\text{blast}$ & $\text{(block\_size = 128, rank = 128)}$ & $2.0e-5$ & $0.0$ & $false$ & $25$ & $59043072$ & $96.28560638427734$\\
 \end{tabular}
 
-\end{table}
+\end{sidewaystable}

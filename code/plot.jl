@@ -331,7 +331,7 @@ end
 
 # max over nr_parameters
 # look at all measurements in ids for this, fix architecture (width and depth), take the best over all hyperparameters
-function plot_best(ids, root_path = ROOT_DIR)
+function plot_best(ids, root_path = ROOT_DIR; small_legend=false)
 
     infos = load_measurements_infos(ids, root_path) 
     infos = infos[infos.done, :]
@@ -346,9 +346,17 @@ function plot_best(ids, root_path = ROOT_DIR)
     gpt = infos.model[1] == gpt2 || infos.model[1] == distil_gpt2
 
     P = if gpt
-        plot(xlabel="nr parameters\n ", ylabel="test perplexity", legend_position=:outerleft, size=(1400, 800))
+        if small_legend
+            plot(xlabel="nr parameters\n ", ylabel="\ntest perplexity", legend_position=:topright, size=(800, 600))
+        else
+            plot(xlabel="nr parameters\n ", ylabel="test perplexity", legend_position=:outerleft, size=(1400, 800))
+        end
     else
-        plot(xlabel="nr parameters\n ", ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
+        if small_legend
+            plot(xlabel="nr parameters\n ", ylabel="\ntest accuracy", legend_position=:bottomright, size=(800, 600))
+        else
+            plot(xlabel="nr parameters\n ", ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
+        end
     end
 
     
@@ -364,14 +372,22 @@ function plot_best(ids, root_path = ROOT_DIR)
         X = [x.nr_parameters for x in np_infos]
         y = [x.best_test for x in np_infos]
         perm = sortperm(X)
-        plot!(P, X[perm], y[perm], label=nothing, color=palette(:tab10)[il])
+
+        if small_legend
+            plot!(P, X[perm], y[perm], label=layer_infos.layer[1], color=palette(:tab10)[il])
+        else
+            plot!(P, X[perm], y[perm], label=nothing, color=palette(:tab10)[il])
+        end
 
         perm = sortperm(X, rev=true)
 
         for (ir, r) in enumerate(np_infos[perm])
-
-            scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r), color=palette(:tab10)[il], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
-
+            
+            if small_legend
+                scatter!(P, [r.nr_parameters], [r.best_test], label=nothing, color=palette(:tab10)[il], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            else
+                scatter!(P, [r.nr_parameters], [r.best_test], label=make_label(r), color=palette(:tab10)[il], markershape=shapes[(ir-1) % length(shapes) + 1], markersize=8)
+            end
         end
 
     end

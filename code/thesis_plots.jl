@@ -2,6 +2,11 @@ include("plot.jl")
 
 using Latexify
 
+function sidewaystable(file_path)
+    content = read(file_path, String)
+    write(file_path, replace(content, "{table}" => "{sidewaystable}"))
+end
+
 function plot_all_unique(x, y, labels, title, xlabel, ylabel)
 
     markers=[:circle, :square, :diamond, :utriangle, :dtriangle, :hexagon, :star5, :xcross, :cross]
@@ -50,7 +55,9 @@ function verbatim_string(s) # verbatim
     return Latexify.LaTeXString("\\text{$s}")
 end
 
-function projection_stuff(file, plot_out, table_out_file)
+function projection_stuff(plot_out, table_out_file)
+
+    file = "p256_0724_1913.csv"
 
     P = plot_projection_results(file)
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
@@ -77,15 +84,19 @@ function projection_stuff(file, plot_out, table_out_file)
 end 
 
 function fine_tuning_stuff(plot_out, table_out)
-    ids = [70, 71, 72, 74, 75, 77, 78, 79]
+    ids = [70, 71, 72, 74, 75, 77, 78, 79, 80, 82]
     # lrl with precise projection in 77
     # regularized projection in 80
 
     root_path = joinpath(ROOT_DIR, "cscs_measurements/")
 
-    P = plot_best(ids, root_path)
+    P = plot_best(ids, root_path, small_legend=true)
     plot!(P, title="Fine-Tuning GPT-2 (124M) on wikitext-2")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
+
+    P = plot_best(ids, root_path, small_legend=false)
+    plot!(P, title="Fine-Tuning GPT-2 (124M) on wikitext-2")
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.pdf"))
 
     infos = load_measurements_infos(ids, root_path) 
     infos = infos[infos.done, :]
@@ -109,7 +120,6 @@ function fine_tuning_stuff(plot_out, table_out)
 
 
     for (il, layer_infos) in enumerate(ginfos)
-
 
         np_infos = [g[argmin(g.best_test), :] for g in groupby(layer_infos, :nr_parameters)]
 
@@ -144,10 +154,94 @@ function fine_tuning_stuff(plot_out, table_out)
         adjustment = [:l, :l, :c, :c, :c, :r, :r, :l]
     )
 
-    open(joinpath(@__DIR__, "plots_and_tables", table_out * ".tex"), "w") do file
+    path = joinpath(@__DIR__, "plots_and_tables", table_out * ".tex")
+    open(path, "w") do file
         write(file, table)
     end
+
+    sidewaystable(path)
 end
+
+
+function pretraining_stuff(plot_out, table_out)
+    ids = [40, 41, 42, 43, 47]
+
+    P = plot_best(ids, joinpath(ROOT_DIR, "cscs_measurements/"), small_legend=true)
+    plot!(P, title="PreTraining ViTs on Tiny-Imagenet")
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
+
+    P = plot_best(ids, joinpath(ROOT_DIR, "cscs_measurements/"), small_legend=false)
+    plot!(P, title="PreTraining ViTs on Tiny-Imagenet")
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.pdf"))
+
+
+    infos = load_measurements_infos(ids, joinpath(ROOT_DIR, "cscs_measurements/")) 
+    infos = infos[infos.done, :]
+
+    @assert all(infos.model .== infos.model[1])
+    @assert all(infos.dataset .== infos.dataset[1])
+
+    ginfos = groupby(infos, [:layer])
+
+    header = verbatim_string.(["layer type", "layer parameters", "learning rate", "weight decay", "lr-decay", "nr of epochs", "nr of parameters", "accuracy"])
+
+    type = []
+    pms = []
+    lr = []
+    wd = []
+    lrdc = []
+    epochs = []
+    nr_parameters = []
+    perplexity = []
+
+
+
+    for (il, layer_infos) in enumerate(ginfos)
+
+        np_infos = [g[argmax(g.best_test), :] for g in groupby(layer_infos, :nr_parameters)]
+
+        vs = [:type, :pms, :lr, :wd, :lrdc, :epochs, :nr_parameters, :perplexity]
+        as = [:layer, :kwargs, :lr, :wdecay, :lr_decay, :max_epochs, :nr_parameters, :best_test]
+
+        append!(type         , [x.layer for x in np_infos])
+        append!(pms          , [x.kwargs for x in np_infos])
+        append!(lr           , [x.lr for x in np_infos])
+        append!(wd           , [x.wdecay for x in np_infos])
+        append!(lrdc         , [x.lr_decay for x in np_infos])
+        append!(epochs       , [x.max_epochs for x in np_infos])
+        append!(nr_parameters, [x.nr_parameters for x in np_infos])
+        append!(perplexity   , [x.best_test for x in np_infos])
+
+    end
+
+    replace!(pms, NamedTuple()=>"")
+
+    table = latex_table(
+        header,
+        "PreTraining ViTs on Tiny-Imagenet",
+        "pt_results",
+        type .|> string .|> verbatim_string,
+        pms .|> string .|> verbatim_string, 
+        lr,
+        wd,
+        lrdc .|> string,
+        epochs,
+        nr_parameters, 
+        perplexity,
+        adjustment = [:l, :l, :c, :c, :c, :r, :r, :l]
+    )
+
+    path = joinpath(@__DIR__, "plots_and_tables", table_out * ".tex")
+    open(path, "w") do file
+        write(file, table)
+    end
+
+    sidewaystable(path)
+
+
+
+end
+
 
 
 begin # tensor train gpt
@@ -173,14 +267,19 @@ begin # tensor train gpt
     savefig(joinpath(@__DIR__, "plots_and_tables", "tt_paper_tab5.pdf"))
 
 
+
 end
 
 
-projection_stuff("p256_0724_1913.csv", "projection", "projection_table")
+
+projection_stuff("projection", "projection_table")
 fine_tuning_stuff("gpt2_results", "gpt2_results_table")
+pretraining_stuff("vit_results", "vit_results_table")
 
 
 plot_best([70, 71, 72, 74, 75, 77, 78, 79], joinpath(ROOT_DIR, "cscs_measurements/"))
-plot_best([70, 71, 72, 74, 75, 77, 78, 79, 80, 81], joinpath(ROOT_DIR, "cscs_measurements/"))
+plot_best([70, 71, 72, 74, 75, 77, 78, 79, 80, 81, 82], joinpath(ROOT_DIR, "cscs_measurements/"))
 
 plot_best([40, 41, 42, 43, 47], joinpath(ROOT_DIR, "cscs_measurements/"))
+
+

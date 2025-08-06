@@ -579,6 +579,9 @@ class Monarch(Projectable):
         self.properly_initialized = True
 
 
+
+
+
 class TT(Projectable):
 
     def __init__(self, in_dim, out_dim, nr_cores, rank):
@@ -645,116 +648,73 @@ class TT(Projectable):
         return undo_to2D(out, shape)
 
 
+
+
+
 def Kronecker(size):
     return TT(size, 2, 1)
 
 
-class BTT(Projectable):
 
-    def __init__(self, in_dim, out_dim, nr_cores, rank):
+
+class BTT2(Projectable):
+
+    "BTT with 2 cores"
+
+    def __init__(self, in_dim, out_dim, rank):
         super().__init__(in_dim, out_dim)
 
-        assert in_dim == out_dim
-        size = in_dim
+        self.in_core_size  = int(round(in_dim  ** (0.5)))
+        self.out_core_size = int(round(out_dim ** (0.5)))
 
-        self.core_size = int(round(size ** (1 / nr_cores)))
+        assert self.in_core_size ** 2  == in_dim
+        assert self.out_core_size ** 2 == out_dim
 
-        # assert self.core_size ** nr_cores == size
-        # assert self.check_rank_not_too_big(size, rank, nr_cores), "rank too big, more parameters than dense model..."
 
-        self.size = size
-        self.nr_cores = nr_cores
         self.rank = rank
 
-        d = self.core_size
-        r = self.rank
-
-        self.cores = nn.ParameterList(
-            [
-                nn.Parameter(self.init_core((*(d for i in range(nr_cores + 1)), r, 1))),
-                *(
-                    nn.Parameter(
-                        self.init_core((*(d for i in range(nr_cores + 1)), r, r))
-                    )
-                    for i in range(self.nr_cores - 2)
-                ),
-                nn.Parameter(self.init_core((*(d for i in range(nr_cores + 1)), 1, r))),
-            ]
-        )
+        self.core1 = nn.Parameter(nn.init.kaiming_uniform_(
+            torch.empty(self.out_core_size, self.out_core_size, self.in_core_size, self.rank)
+        ))
+        self.core2 = nn.Parameter(nn.init.kaiming_uniform_(
+            torch.empty(self.out_core_size, self.rank, self.in_core_size, self.in_core_size)
+        ))
 
         self.bias = nn.Parameter(
             nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze()
         )
 
-    def check_rank_not_too_big(self, size, rank, nr_cores):
-        nr_params = (
-            rank * (self.core_size ** (nr_cores + 1)) * (2 + (nr_cores - 2) * rank)
-        )
-        return nr_params <= size * size
-
-    def init_core(self, dims):
-        # r = self.rank
-        # c = self.nr_cores
-        # t = 1/sqrt(self.size) # target std of entire weight matrix, to mimic kaiming_normal
-        # sigma = (t * (sqrt(r) ** (1-c))) ** (1/c)
-        # G = torch.zeros(dims)
-        # nn.init.normal_(G, std=sigma)
-        G = torch.zeros(dims)
-        nn.init.kaiming_normal_(G.reshape(-1, self.core_size, self.core_size))
-
-        return init_scale * G
-
-    def to_matrix(self):
-        # efficient way, dont manifest matrix: (runs out of gpu memory because I use large batch size)
-        d = self.core_size
-        c = self.nr_cores
-        # z = x.reshape(x.shape[0], *(d for _ in range(c)), 1)
-
-        # for idx, core in enumerate(self.cores):
-        #     t = self.nr_cores - idx - 1
-        #     j = d ** t
-        #     i = d ** idx
-        #     z = torch.einsum("Bjxia,jxyiba->Bjyib", z.reshape(z.shape[0], j, d, i, z.shape[-1]), core.reshape(j, d, d, i, *core.shape[-2:]))
-
-        # return z.reshape(x.shape[0], -1) + self.bias
-
-        # manifest the matrix, then matmul
-        G = self.cores[0]
-        for idx, core in enumerate(self.cores[1:]):
-            # t = self.nr_cores - 1 - idx
-            j = d ** (idx + 1)
-            i = d ** (self.nr_cores - idx - 1)
-            G = torch.einsum(
-                "jixcb,jiyba->jiyxca",
-                core.reshape(j, i, d, *core.shape[-2:]),
-                G.reshape(j, i, d ** (idx + 1), *G.shape[-2:]),
-            )
-
-        return G.reshape(self.size, self.size)
-
     def forward(self, x):
+        x, shape = to2D(x)
 
-        d = self.core_size
-        c = self.nr_cores
-        z = x.reshape(x.shape[0], *(d for _ in range(c)), 1)
+        W = torch.einsum("iojr,irjn->iojn", self.core1, self.core2)
+        W = W.reshape(self.out_dim, self.in_dim)
 
-        for idx, core in enumerate(self.cores):
-            t = self.nr_cores - idx - 1
-            j = d**t
-            i = d**idx
-            z = torch.einsum(
-                "Bjxia,jxyiba->Bjyib",
-                z.reshape(z.shape[0], j, d, i, z.shape[-1]),
-                core.reshape(j, d, d, i, *core.shape[-2:]),
-            )
+        out = torch.addmm(self.bias, x, W.T)
 
-        return z.reshape(x.shape[0], -1) + self.bias
+        return undo_to2D(out, shape)
 
-        # G = self.to_matrix()
 
-        # x, shape = to2D(x)
-        # out = x @ G + self.bias
-        # return undo_to2D(out, shape)
+    def project(self, fn):
+
+        M = fn.weight
+
+        outs = self.out_core_size
+        ins = self.in_core_size
+
+        with torch.no_grad():
+
+            for i in range(self.out_core_size):
+                for j in range(self.in_core_size):
+                    m = M[i*outs:(i+1)*outs, j*ins:(j+1)*ins]
+                    s = torch.linalg.svd(m)
+                    d = s.S[:self.rank].sqrt()
+                    self.core1[i, :, j, :] = torch.einsum("r,dr->dr", d, s.U[:, :self.rank])
+                    self.core2[i, :, j, :] = torch.einsum("r,rd->rd", d, s.Vh[:self.rank, :])
+                
+            self.bias = nn.Parameter(fn.bias.clone().detach())
+
+
 
 class AbstractBlast(Projectable):
 
