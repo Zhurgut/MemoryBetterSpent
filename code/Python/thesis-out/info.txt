@@ -1,0 +1,27 @@
+Unstructured 7%, 7.0%
+Unstructured 20%, 20.0%
+LowRank k=2, 0.43%
+LowRank-Light k=2, 0.43%
+LowRank k=15, 3.23%
+LowRank-Light k=15, 3.21%
+LowRank k=40, 8.61%
+LowRank-Light k=40, 8.44%
+LowRank-Light k=12 no regularization, 2.57%
+LowRank-Light k=12 too much regularization, 2.57%
+Monarch b=3, 33.59%
+Monarch b=32, 5.9%
+BTT k=1, 6.64%
+BTT k=3, 19.93%
+BLAST-8x8 k=4, 0.9%
+BLAST-8x8 k=12, 2.69%
+BLAST-8x8 k=32, 7.18%
+Kronecker 4, 6.25%
+Kronecker 32, 0.21%
+TT d=2 k=1, 0.22%
+TT d=3 k=1, 0.04%
+TT d=4 k=1, 0.32%
+TT d=2 k=4, 0.87%
+TT d=3 k=4, 0.3%
+TT d=4 k=4, 1.28%
+TT d=2 k=20, 4.36%
+TT d=3 k=20, 5.43%

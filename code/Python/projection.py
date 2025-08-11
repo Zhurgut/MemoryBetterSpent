@@ -301,7 +301,7 @@ def collect256(M, nr_runs, nr_steps):
     
 # collect256(model_matrix(256, 2), 2, 15000)
 # collect256(torch.randn(512, 256), 1, 5000)
-collect256(random_matrix_normal(256), 2, 5000)
+# collect256(random_matrix_normal(256), 2, 5000)
 # collect729(model_matrix(729, 3), 3, 5000)
 
 # project(torch.randn(64, 64), torch.rand(64), 1, LowRank, 48)
@@ -352,7 +352,21 @@ collect256(random_matrix_normal(256), 2, 5000)
 # project(l, 1e-2, 1000, Monarch, 64)
 
 
-# l = nn.Linear(10, 40)
+l = nn.Linear(4, 4)
+w = torch.Tensor([
+    [1,  -1,  1, -1],
+    [-1,  1,  1, -1],
+    [1,  -1, -1,  1],
+    [-1,  1.1, -1,  1.0]
+])
+
+l.weight = nn.Parameter(w)
+l.bias = nn.Parameter(torch.zeros(4))
+r = LowRankLight(4, 4, 2)
+r.project(l)
+
+print(r(torch.eye(4, 4)).T)
+
 # # b = Blast(10, 20, 2, 6)
 # b = Blast(10, 40, 5, 6)
 # # b = LowRankLight(10, 20, 9)

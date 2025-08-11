@@ -292,6 +292,10 @@ class LowRankLight(Projectable):
             nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze()
         )
 
+        # self.project(nn.Linear(in_dim, out_dim))
+
+        self.regularization = 3e-3
+
     def forward(self, x):
         M = x.shape[-1]
         BS = math.prod(x.shape[:-1])
@@ -305,36 +309,9 @@ class LowRankLight(Projectable):
         out = torch.addmm(self.bias, mid, self.A.T)
 
         return out.reshape(*(shape[:-1]), -1)
+    
 
-    def project_precise(self, fn):
-
-        out_dim, in_dim = fn.weight.shape
-        assert self.in_dim == in_dim and self.out_dim == out_dim
-
-        rank = self.rank
-
-        U, S, Vt = torch.linalg.svd(fn.weight)
-        S = torch.diag(S)
-
-        A = U[:, :rank] @ S[:rank, :rank]
-        v = Vt[:rank, :]
-        B1 = v[:, :rank]
-        B2 = v[:, rank:]
-
-        out_U = A @ B1
-        out_V = torch.linalg.solve(
-            B1, B2
-        )  # will never actually fail, because svd is noisy
-
-        self.A = nn.Parameter(out_U)
-        self.B = nn.Parameter(out_V)
-
-
-        # print(self.A.abs().max(), " + ", self.B.abs().max())
-
-        self.bias = nn.Parameter(fn.bias.clone().detach())
-
-    def project_regularized(self, fn, l=3e-3):
+    def project_regularized(self, fn, l):
 
         out_dim, in_dim = fn.weight.shape
         assert self.in_dim == in_dim and self.out_dim == out_dim
@@ -349,16 +326,18 @@ class LowRankLight(Projectable):
         B1 = v[:, :rank]
         B2 = v[:, rank:]
 
-        out_A = A @ B1
+        out_A = A @ B1 
 
         W1 = fn.weight[:, :rank]
         W2 = fn.weight[:, rank:]
 
         # solve A*B = W2 with ridge regression
         h = l * torch.trace(out_A.T @ out_A) / rank
+
         out_B = torch.linalg.solve(
             out_A.T @ out_A + h * torch.eye(rank, rank, device=out_A.device), out_A.T @ W2
         )
+        # out_B = torch.linalg.lstsq(out_A, W2).solution
 
         self.A = nn.Parameter(out_A)
         self.B = nn.Parameter(out_B)
@@ -372,9 +351,8 @@ class LowRankLight(Projectable):
 
     def project(self, fn):
 
-        # self.project_precise(fn)
-        self.project_regularized(fn)
-        # self.project_GD(fn) # not work well
+        self.project_regularized(fn, self.regularization)
+
 
 
 class SLTrain(Projectable):
@@ -458,7 +436,7 @@ class BlockDiagonal(Projectable):
 
         bound = math.sqrt(1 / math.sqrt(in_dim))
         w = nn.init.uniform_(
-            torch.empty(nr_blocks, self.block_size_in, self.block_size_out),
+            torch.empty(nr_blocks, self.block_size_out, self.block_size_in),
             a=-bound,
             b=bound,
         )
@@ -476,15 +454,12 @@ class BlockDiagonal(Projectable):
         BS, in_dim = x.shape
         assert in_dim == self.in_dim
 
-        input_mats = x.reshape(BS, self.nr_blocks, self.block_size_in).transpose(
-            0, 1
-        )  # (nr_blocks, batch_size, block_in_dim) * weights: (nr_blocks, block_in_dim, block_out_dim)
-
-        out = (
-            torch.bmm(input_mats, self.weights)
-            .transpose(0, 1)
-            .reshape(BS, self.out_dim)
-        )  # nr_blocks, batch_size, block_size
+        input_mats = x.reshape(BS, self.nr_blocks, self.block_size_in).transpose(0, 1)  # (nr_blocks, batch_size, block_in_dim) * weights: (nr_blocks, block_in_dim, block_out_dim)
+        
+        
+        out = torch.bmm(input_mats, self.weights.transpose(1, 2)) # nr_blocks, batch_size, block_size_out
+        
+        out = out.transpose(0, 1).reshape(BS, self.out_dim) # nr_blocks, batch_size, block_size
 
         if self.bias is not None:
             return out + self.bias
@@ -531,9 +506,9 @@ class Monarch(Projectable):
         self.nr_blocks = nr_blocks
 
         self.fn = nn.Sequential(
-            BlockDiagonal(in_dim, inner_dim, nr_blocks, bias=False),  # R^T
+            BlockDiagonal(in_dim, inner_dim, nr_blocks, bias=False),  # R
             Permute(inner_dim, nr_blocks),  # P
-            BlockDiagonal(inner_dim, out_dim, out_dim // nr_blocks, bias=False),  # L^T
+            BlockDiagonal(inner_dim, out_dim, out_dim // nr_blocks, bias=False),  # L
             Permute(out_dim, out_dim // nr_blocks),  # P^T
         )
 
@@ -561,23 +536,51 @@ class Monarch(Projectable):
 
         nr_blocks = self.nr_blocks
 
-        m = fn.weight.T.reshape(
-            nr_blocks, self.in_dim // nr_blocks, nr_blocks, self.out_dim // nr_blocks
+        A = fn.weight.reshape(
+            nr_blocks, self.out_dim // nr_blocks, nr_blocks, self.in_dim // nr_blocks
         )
 
         with torch.no_grad():
-            for i in range(nr_blocks):
+            for k in range(nr_blocks):
                 for j in range(self.out_dim // nr_blocks):
-                    y = m[i, :, :, j]
-                    s = torch.linalg.svd(y)
+                    M = A[:, j, k, :].contiguous()
+                    s = torch.linalg.svd(M)
                     d = math.sqrt(s.S[0])
-                    self.fn[0].weights[i, :, j] = d * s.U[:, 0]
-                    self.fn[2].weights[j, i, :] = d * s.Vh[0, :]
+                    self.fn[0].weights[k, j, :] = d * s.Vh[0, :]
+                    self.fn[2].weights[j, :, k] = d * s.U[:, 0]
 
         self.bias = nn.Parameter(fn.bias.clone().detach())
 
         self.properly_initialized = True
 
+
+
+class Kronecker(Projectable):
+
+    def __init__(self, in_dim, out_dim, factor_1_size):
+        super().__init__(in_dim, out_dim)
+
+        d = factor_1_size
+
+        self.f1 = nn.Parameter(
+            nn.init.kaiming_uniform_(torch.empty(d, d))
+        )
+
+        self.f2 = nn.Parameter(
+            nn.init.kaiming_uniform_(torch.empty(self.out_dim // d, self.in_dim // d))
+        )
+
+        self.bias = nn.Parameter(
+            nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze()
+        )
+    
+    def forward(self, x):
+
+        W = torch.kron(self.f1, self.f2)
+
+        x, shape = to2D(x)
+        out = torch.addmm(self.bias, x, W.T)
+        return undo_to2D(out, shape)
 
 
 
@@ -587,45 +590,39 @@ class TT(Projectable):
     def __init__(self, in_dim, out_dim, nr_cores, rank):
         super().__init__(in_dim, out_dim)
 
-        assert in_dim == out_dim
-        size = in_dim
+        self.in_core_size = int(round(in_dim ** (1 / nr_cores)))
+        self.out_core_size = int(round(out_dim ** (1 / nr_cores)))
 
-        self.core_size = int(round(size ** (1 / nr_cores)))
+        assert self.in_core_size ** nr_cores == in_dim
+        assert self.out_core_size ** nr_cores == out_dim
 
-        assert self.core_size**nr_cores == size
-        # assert self.check_rank_not_too_big(size, rank, nr_cores), "rank too big, more parameters than dense model..."
-
-        self.size = size
         self.nr_cores = nr_cores
         self.rank = rank
 
-        d = self.core_size
+        d_in = self.in_core_size
+        d_out = self.out_core_size
         r = self.rank
 
         self.cores = nn.ParameterList(
             [
-                nn.Parameter(self.init_core((1, d, d, r))),  # Gc
+                nn.Parameter(self.init_core((1, d_out, d_in, r))), 
                 *(
-                    nn.Parameter(self.init_core((r, d, d, r)))
+                    nn.Parameter(self.init_core((r, d_out, d_in, r)))
                     for i in range(self.nr_cores - 2)
                 ),
-                nn.Parameter(self.init_core((r, d, d, 1))),  # G1
+                nn.Parameter(self.init_core((r, d_out, d_in, 1))), 
             ]
         )
 
-        b = torch.zeros(size)
-        nn.init.uniform_(b, -1, 1)
-        self.bias = nn.Parameter(np.sqrt(1 / size) * b)
-
-    def check_rank_not_too_big(self, size, rank, nr_cores):
-        nr_params = rank * self.core_size * self.core_size * (2 + (nr_cores - 2) * rank)
-        return nr_params <= size * size
+        self.bias = nn.Parameter(
+            nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze()
+        )
 
     def init_core(self, dims):
         r = self.rank
         c = self.nr_cores
         t = 1 / math.sqrt(
-            self.size
+            0.5*(self.in_dim + self.out_dim)
         )  # target std of entire weight matrix, to mimic kaiming_normal
         sigma = (t * (math.sqrt(r) ** (1 - c))) ** (1 / c)
         G = torch.zeros(dims)
@@ -633,33 +630,110 @@ class TT(Projectable):
         return init_scale * G
 
     def to_matrix(self):
-        G = self.cores[0][0, :, :, :]
-        for core in self.cores[1:]:
-            G = torch.einsum("...a,aijb->...ijb", G, core)
+        G = None
 
-        return G.reshape(self.size, self.size)
+        if self.nr_cores == 2:
+            G = torch.einsum("ainb,bjmc->aijnmc", *self.cores)
+        if self.nr_cores == 3:
+            G = torch.einsum("ainb,bjmc,ckod->aijknmod", *self.cores)
+        if self.nr_cores == 4:
+            G = torch.einsum("ainb,bjmc,ckod,dlpe->aijklnmope", *self.cores)
+
+        return G.reshape(self.out_dim, self.in_dim)
 
     def forward(self, x):
 
         G = self.to_matrix()
 
         x, shape = to2D(x)
-        out = x @ G + self.bias
+        out = torch.addmm(self.bias, x, G.T)
         return undo_to2D(out, shape)
 
 
 
 
 
-def Kronecker(size):
-    return TT(size, 2, 1)
 
 
 
 
 class BTT2(Projectable):
 
-    "BTT with 2 cores"
+    def __init__(self, in_dim, out_dim, rank):
+        super().__init__(in_dim, out_dim)
+
+        self.in_core_size  = int(round(in_dim  ** (0.5)))
+        self.out_core_size = int(round(out_dim ** (0.5)))
+
+        assert self.in_core_size ** 2  == in_dim
+        assert self.out_core_size ** 2 == out_dim
+
+
+        self.rank = rank
+
+        self.L = nn.Parameter(nn.init.kaiming_uniform_(
+            torch.empty(self.out_core_size, self.out_core_size, self.in_core_size, self.rank)
+        ))
+        self.R = nn.Parameter(nn.init.kaiming_uniform_(
+            torch.empty(self.rank, self.out_core_size, self.in_core_size, self.in_core_size)
+        ))
+
+        self.bias = nn.Parameter(
+            nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze()
+        )
+
+    def forward(self, x):
+        x, shape = to2D(x)
+
+        out = torch.einsum("sbgd,Bgd->Bsbg", self.R, x.reshape(-1, self.in_core_size, self.in_core_size))
+        out = torch.einsum("Bsbg,abgs->Bab", out, self.L)
+        out = out.reshape(-1, self.out_dim) + self.bias
+
+        return undo_to2D(out, shape)
+
+
+    def project(self, fn):
+
+        out_dim, in_dim = fn.weight.shape
+        assert self.in_dim == in_dim and self.out_dim == out_dim
+
+        b_out = self.out_core_size 
+        b_in = self.in_core_size    
+
+        # assert b_out == b_in, "This routine assumes square block/core sizes."
+
+        A = fn.weight.reshape(b_out, b_out, b_in, b_in)
+
+        with torch.no_grad():
+
+            for k in range(b_in):    
+                for j in range(b_out):   
+
+                    M_blocklike = A[:, j, k, :]
+
+                    U, S, Vh = torch.linalg.svd(M_blocklike, full_matrices=False)
+
+                    d = S[:self.rank].sqrt()       
+
+                    U_r = U[:, :self.rank]         
+                    Vh_r = Vh[:self.rank, :]              
+
+                    target_L = self.L[:, j, k, :self.rank]
+
+                    target_L.copy_(U_r * d.unsqueeze(0))
+
+                    target_R = self.R[:self.rank, j, k, :]
+                    target_R.copy_(d.unsqueeze(1) * Vh_r)
+
+            if fn.bias is not None:
+                self.bias = nn.Parameter(fn.bias.clone().detach())
+            else:
+                self.bias = None
+
+
+
+
+class BlockLowRank(Projectable):
 
     def __init__(self, in_dim, out_dim, rank):
         super().__init__(in_dim, out_dim)

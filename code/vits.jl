@@ -6,25 +6,25 @@ base_id = 40
 wdecay = [0.02]
 
 
-collect_measurements(
-    layer=lowrank,
-    model=vit2,
-    dataset=tiny_imagenet,
-    width=384,
-    depth=10,
-    lr=[6e-4],
-    bs=256,
-    max_epochs=1600,
-    weight_decay=[0.04],
-    lr_decay=true,
-    early_stopping=false,
-    dropout=0.1,
-    max_bs=1000,
-    id=base_id+9,
-    patch_size=8,
-    nr_heads=16,
-    rank=48
-)
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=384,
+#     depth=10,
+#     lr=[6e-4],
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=[0.04],
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     id=base_id+9,
+#     patch_size=8,
+#     nr_heads=16,
+#     rank=48
+# )
 
 # collect_measurements(
 #     layer=lowrank,
@@ -45,6 +45,27 @@ collect_measurements(
 #     nr_heads=16,
 #     rank=72
 # )
+
+collect_measurements(
+    layer=lowranklight,
+    model=vit2,
+    dataset=tiny_imagenet,
+    width=224,
+    depth=9,
+    lr=[6e-4],
+    bs=256,
+    max_epochs=1600,
+    weight_decay=[0.03],
+    lr_decay=true,
+    early_stopping=false,
+    dropout=0.1,
+    max_bs=1000,
+    id=base_id+9,
+    patch_size=8,
+    nr_heads=14,
+    rank=123
+)
+
 
 
 

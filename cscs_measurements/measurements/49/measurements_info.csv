@@ -15,3 +15,11 @@ lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,1600
 lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,1600,0.06,1.0,0.1,14,tiny_imagenet,true,false,1000,1,true,2426696,0.8328999876976013,0.6087999939918518,1561,1489
 lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0008,256,1600,0.02,1.0,0.1,15,tiny_imagenet,true,false,1000,1,true,2426696,0.8909099698066711,0.599399983882904,1591,1518
 lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0006,256,1600,0.02,1.0,0.1,16,tiny_imagenet,true,false,1000,1,true,2426696,0.9172099828720093,0.6101999878883362,1591,1540
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 48)",vit2,384,10,0.0006,256,1600,0.04,1.0,0.1,17,tiny_imagenet,true,false,1000,1,true,2426696,0.8903099894523621,0.5979999899864197,1551,1410
+lowrank,"(patch_size = 8, nr_heads = 16, rank = 72)",vit2,288,9,0.0008,256,1600,0.04,1.0,0.1,18,tiny_imagenet,true,false,1000,1,true,2397800,0.8564299941062927,0.6043999791145325,1581,1491
+lowranklight,"(patch_size = 8, nr_heads = 14, rank = 123)",vit2,224,9,0.001,256,300,0.04,1.0,0.1,19,tiny_imagenet,true,false,1000,1,true,2417987,0.6499699950218201,0.5113999843597412,291,262
+lowranklight,"(patch_size = 8, nr_heads = 14, rank = 123)",vit2,224,9,0.001,256,300,0.02,1.0,0.1,20,tiny_imagenet,true,false,1000,1,true,2417987,0.6489999890327454,0.5065999627113342,301,264
+lowranklight,"(patch_size = 8, nr_heads = 14, rank = 123)",vit2,224,9,0.0008,256,300,0.04,1.0,0.1,21,tiny_imagenet,true,false,1000,1,true,2417987,0.6567699909210205,0.5103999972343445,301,275
+lowranklight,"(patch_size = 8, nr_heads = 14, rank = 123)",vit2,224,9,0.0008,256,300,0.02,1.0,0.1,22,tiny_imagenet,true,false,1000,1,true,2417987,0.6653499603271484,0.5069000124931335,301,279
+lowranklight,"(patch_size = 8, nr_heads = 14, rank = 123)",vit2,224,9,0.0006,256,300,0.04,1.0,0.1,23,tiny_imagenet,true,false,1000,1,true,2417987,0.6557799577713013,0.5105999708175659,291,297
+lowranklight,"(patch_size = 8, nr_heads = 14, rank = 123)",vit2,224,9,0.0006,256,300,0.02,1.0,0.1,24,tiny_imagenet,true,false,1000,1,true,2417987,0.6660599708557129,0.5108999609947205,301,267
