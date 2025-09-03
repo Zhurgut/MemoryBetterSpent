@@ -133,8 +133,8 @@ def compress(layer, img_path, out_img_name):
 # compress(Monarch(1152, 768, 32), "chevy.jpg", "Monarch b=32")
 
 
-# compress(BTT2(1156, 729, 1), "chevy.jpg", "BTT k=1")
-# compress(BTT2(1156, 729, 3), "chevy.jpg", "BTT k=3")
+# compress(BTT2(1156, 776, 1), "chevy.jpg", "BTT'' k=1")
+# compress(BTT2(1156, 776, 3), "chevy.jpg", "BTT'' k=3")
 
 
 
@@ -147,11 +147,32 @@ def compress(layer, img_path, out_img_name):
 # compress(Kronecker(1152, 768, 32), "chevy.jpg", "Kronecker 32")
 
 # compress(TT(1156, 729, 2, 1), "chevy.jpg", "TT d=2 k=1")
-# compress(TT(1000, 729, 3, 1), "chevy.jpg", "TT d=3 k=1")
+compress(TT(1000, 729, 3, 1), "chevy.jpg", "TT d=3 k=1")
+compress(TT(1000, 729, 3, 4), "chevy.jpg", "TT d=3 k=4")
 # compress(TT(625, 625, 2, 1), "chevy.jpg", "TT d=4 k=1")
 
-compress(TT(1156, 729, 2, 20), "chevy.jpg", "TT d=2 k=20")
+# compress(TT(1156, 729, 2, 20), "chevy.jpg", "TT d=2 k=20")
 compress(TT(1000, 729, 3, 20), "chevy.jpg", "TT d=3 k=20")
 
 
 file.close()
+
+
+# perm = torch.arange(0, 3072)
+# for i in range(3072):
+#     r = (torch.rand(1) * 3072).int()
+#     perm[i], perm[r.item()] = perm[r.item()], perm[i]
+
+
+
+# M = torch.load("cifar10weight.pt")
+# torch.save(M[:, perm], "cifar10weightSHUFFLED.pt")
+
+# m = M.to(torch.device("cpu"))
+# m = (m - m.min()) / (m.max() - m.min())
+# m = m * 255
+# m = m.byte()
+# m = m[:, perm]
+# m = m.reshape(1, *m.shape)
+
+# write_png(m, "cifar10weight.png")

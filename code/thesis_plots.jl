@@ -7,6 +7,8 @@ function sidewaystable(file_path)
     write(file_path, replace(content, "{table}" => "{sidewaystable}"))
 end
 
+
+
 function plot_all_unique(x, y, labels, title, xlabel, ylabel)
 
     markers=[:circle, :square, :diamond, :utriangle, :dtriangle, :hexagon, :star5, :xcross, :cross]
@@ -38,6 +40,7 @@ function latex_table(header, caption, label, columns::AbstractVector...; adjustm
         else
             latexify(data; env=:tabular, head = header, adjustment=adjustment, fmt=format)
         end
+
     return """
 \\begin{table}[h!]
 \\centering
@@ -49,15 +52,41 @@ $(String(tbl))
 """
 end
 
+function latex_longtable(header, caption, label, columns::AbstractVector...; adjustment=:c, format=nothing)
+    n = length(columns)
+    len = length(columns[1])
+    @assert all(length(col)==len for col in columns) "All columns must have equal length"
+
+    data = [columns[j][i] for i in 1:len, j in 1:n]
+    
+    tbl = if isnothing(format)
+            latexify(data; env=:tabular, head = header, adjustment=adjustment)
+        else
+            latexify(data; env=:tabular, head = header, adjustment=adjustment, fmt=format)
+        end
+    
+
+    longtable = replace(tbl, "{tabular}" => "{longtable}")
+    lines = collect(eachline(IOBuffer(longtable)))
+    insert!(lines, 2, "\\caption{$caption} \\label{tab:$label} \\\\")
+    longtable = *([l * "\n" for l in lines]...)
+
+    
+    return """
+\\centering
+\\tiny
+$(longtable)
+"""
+end
+
 function verbatim_string(s) # verbatim
     s = replace(s, "%"=>"\\%")
     s = replace(s, "_"=>"\\_")
+    s = replace(s, "#"=>"\\#")
     return Latexify.LaTeXString("\\text{$s}")
 end
 
-function projection_stuff(plot_out, table_out_file)
-
-    file = "p256_0724_1913.csv"
+function projection_stuff(plot_out, table_out_file, file, label="")
 
     P = plot_projection_results(file)
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
@@ -66,10 +95,10 @@ function projection_stuff(plot_out, table_out_file)
 
     header = verbatim_string.(["matrix type", "parameters", "nr_parameters", "error (frobenius norm)"])
 
-    table = latex_table(
+    table = latex_longtable(
         header, 
         "Projection Results",
-        "projection_table",
+        "projection_table$(label)",
         verbatim_string.(df.layer), 
         verbatim_string.(df.spec), 
         df.nr_parameters, 
@@ -81,21 +110,30 @@ function projection_stuff(plot_out, table_out_file)
     open(joinpath(@__DIR__, "plots_and_tables", table_out_file * ".tex"), "w") do file
         write(file, table)
     end
+
+
+
+
 end 
 
 function fine_tuning_stuff(plot_out, table_out)
-    ids = [70, 71, 72, 74, 75, 77, 78, 79, 80, 82]
+    ids = [70, 
+            72, 77, 80, 81, 82, # 81?
+            71, 
+            78, 
+            74, 79, 
+            75]
     # lrl with precise projection in 77
     # regularized projection in 80
 
     root_path = joinpath(ROOT_DIR, "cscs_measurements/")
 
     P = plot_best(ids, root_path, small_legend=true)
-    plot!(P, title="Fine-Tuning GPT-2 (124M) on wikitext-2")
+    plot!(P, title="Fine-Tuning GPT-2 small (124M) on Wikitext-2")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
 
     P = plot_best(ids, root_path, small_legend=false)
-    plot!(P, title="Fine-Tuning GPT-2 (124M) on wikitext-2")
+    plot!(P, title="Fine-Tuning GPT-2 small (124M) on Wikitext-2")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.pdf"))
 
     infos = load_measurements_infos(ids, root_path) 
@@ -160,18 +198,24 @@ function fine_tuning_stuff(plot_out, table_out)
     end
 
     sidewaystable(path)
+
+
+   
+
+
 end
 
 
 function pretraining_stuff(plot_out, table_out)
-    ids = [40, 41, 42, 43, 47]
+    ids = [40, 42, 41, 43, 47] # no BTT
+    # ids = [40, 42, 41, 43, 47, 39]
 
     P = plot_best(ids, joinpath(ROOT_DIR, "cscs_measurements/"), small_legend=true)
-    plot!(P, title="PreTraining ViTs on Tiny-Imagenet")
+    plot!(P, title="Pre-Training ViTs on Tiny-ImageNet")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
 
     P = plot_best(ids, joinpath(ROOT_DIR, "cscs_measurements/"), small_legend=false)
-    plot!(P, title="PreTraining ViTs on Tiny-Imagenet")
+    plot!(P, title="Pre-Training ViTs on Tiny-ImageNet")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.pdf"))
 
 
@@ -240,6 +284,35 @@ function pretraining_stuff(plot_out, table_out)
 
 
 
+
+     wider_models = [
+        "Model" "# Parameters" "Model Width" "# Heads" "# Transformer Blocks" "Best Test Accuracy";
+        verbatim_string("Dense, run 1"    ) 2428040     192         12        9          verbatim_string("61.86 %");
+        verbatim_string("Dense, run 2"    ) 2428040     192         12        9          verbatim_string("60.96 %");
+        verbatim_string("Low-Rank, rank=72") 2397800    288         16        9          verbatim_string("60.44 %");
+        verbatim_string("Low-Rank, rank=48") 2426696    384         16        10         verbatim_string("61.13 %");
+    ]
+
+    
+    table = latex_table(
+        verbatim_string.(wider_models[1, :]),
+        "Using structured sparsity to train wider models",
+        "wider-models",
+        wider_models[2:end, 1],
+        wider_models[2:end, 2],
+        wider_models[2:end, 3],
+        wider_models[2:end, 4],
+        wider_models[2:end, 5],
+        wider_models[2:end, 6],
+        adjustment = [:l, :r, :c, :c, :c, :c, :l]
+    )
+
+    path = joinpath(@__DIR__, "plots_and_tables/wider_models_table.tex")
+    open(path, "w") do file
+        write(file, table)
+    end
+
+
 end
 
 
@@ -272,7 +345,8 @@ end
 
 
 
-projection_stuff("projection", "projection_table")
+projection_stuff("randn_projection", "randn_projection_table", "p1296_0811_1640.csv")
+projection_stuff("c10_projection", "c10_projection_table", "c10_0819_1631.csv", "_c10")
 fine_tuning_stuff("gpt2_results", "gpt2_results_table")
 pretraining_stuff("vit_results", "vit_results_table")
 

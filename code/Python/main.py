@@ -147,7 +147,9 @@ def main():
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["rank"], p=p)  
         elif layer_fn is layers.Monarch:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["nr_blocks"], p=p)
-        elif layer_fn is layers.TT or layer_fn is layers.BTT2:
+        elif layer_fn is layers.BTT2:
+            model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["rank"], p=p)
+        elif layer_fn is layers.TT:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["nr_cores"], params["rank"], p=p)
         elif layer_fn is layers.Blast:
             model = model_fn(in_dim, args.depth, args.width, out_dim, layer_fn, params["block_size"], params["rank"], p=p)
@@ -160,7 +162,9 @@ def main():
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["rank"], dropout_p=p)  
         elif layer_fn is layers.Monarch:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_blocks"], dropout_p=p)
-        elif layer_fn is layers.TT or layer_fn is layers.BTT2:
+        elif layer_fn is layers.BTT2:
+            model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["rank"], dropout_p=p)  
+        elif layer_fn is layers.TT:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["nr_cores"], params["rank"], dropout_p=p)
         elif layer_fn is layers.Blast:
             model = model_fn(args.width, image_dim, params["patch_size"], args.depth, params["nr_heads"], out_dim, layer_fn, params["block_size"], params["rank"], dropout_p=p)
@@ -174,7 +178,9 @@ def main():
             model = model_fn(layer_fn, params["rank"])  
         elif layer_fn is layers.Monarch:
             model = model_fn(layer_fn, params["nr_blocks"])
-        elif layer_fn is layers.TT or layer_fn is layers.BTT2:
+        elif layer_fn is layers.BTT2:
+            model = model_fn(layer_fn, params["rank"])  
+        elif layer_fn is layers.TT:
             model = model_fn(layer_fn, params["nr_cores"], params["rank"])
         elif layer_fn is layers.Blast:
             model = model_fn(layer_fn, params["block_size"], params["rank"])

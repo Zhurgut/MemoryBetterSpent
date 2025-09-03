@@ -211,6 +211,7 @@ def train(model, dataset, nr_epochs, lr, weight_decay, early_stopping, lr_decay,
         if lr_decay:
             lr_scheduler.step()
 
+    # torch.save(model[1].weight, "cifar10weight.pt")
 
     return training_losses, training_accuracies, test_losses, test_accuracies, times
         # print(epoch, ": avg training loss: ", avg_train_loss, "train accuracy: ", round(train_accuracy.item(), 4), " avg test loss: ", round(avg_test_loss.item(), 4), " test accuracy: ", round(test_accuracy.item(), 4))

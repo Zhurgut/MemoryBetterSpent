@@ -28,7 +28,7 @@ function density(layer::Layer, width, kwargs)
     elseif layer == kronecker
         return round(100 * 2 * width / dense)
     elseif layer == btt 
-        n = kwargs.nr_cores
+        n = 2
         r = kwargs.rank
         s = width^(1/n)
         ps = (r * s^(n+1)) * (2 + (n-2)*r)
@@ -36,9 +36,14 @@ function density(layer::Layer, width, kwargs)
     elseif layer == lowranklight
         k = kwargs.rank
         n = width
-        return round(100 * (n*k + (n-k)*k) / (n*n))
+        return round(100 * (n*k + (n-k)*k) / dense)
     elseif layer == unstructured
         return kwargs.density
+    elseif layer == blast
+        bs = kwargs.block_size
+        b = width ÷ bs
+        r = kwargs.rank
+        return round(100 * ((2width + b*b)*r) / dense)
     end
     100
 
@@ -67,18 +72,32 @@ function plot_the_stuff(ids)
     for P in Ps display(P) end
 end
 
+function layer_name(layer::Layer)
+    if layer == dense return "Dense" end
+    if layer == lowrank return "Low-Rank" end
+    if layer == lowranklight return "Low-Rank Light" end
+    if layer == monarch return "Monarch" end
+    if layer == kronecker return "Kronecker" end
+    if layer == tt return "TT" end
+    if layer == btt return "BTT" end
+    if layer == blast return "BLAST" end
+    if layer == unstructured return "Unstructured" end
+end
+
+
 
 function make_label(df_row, arch=false)
     io = IOBuffer()
     cols = names(df_row)
 
-    write(io, "($(df_row.id))") # measurement id
+    # write(io, "($(df_row.id))") # measurement id
+    # write(io, "($(df_row.id)[[$(df_row.nr_runs)]])") # measurement id
 
     if "layer" in cols
-        write(io, " $(df_row.layer)")
+        write(io, " $(layer_name(df_row.layer))")
 
         if df_row.layer != dense && "width" in cols && "kwargs" in cols
-            write(io, "[$(density(df_row.layer, df_row.width, df_row.kwargs) |> Int)%]")
+            write(io, " [$(density(df_row.layer, df_row.width, df_row.kwargs) |> Int)%]")
         end
     end
 
@@ -90,25 +109,25 @@ function make_label(df_row, arch=false)
     #     write(io, ", $(df_row.kwargs)")
     # end
 
-    if "lr" in cols
-        write(io, ", lr=$(df_row.lr)")
-    end
+    # if "lr" in cols
+    #     write(io, ", lr=$(df_row.lr)")
+    # end
 
-    if "wdecay" in cols && df_row.wdecay != 0.0
-        write(io, ", wd=$(df_row.wdecay)")
-    end
+    # if "wdecay" in cols && df_row.wdecay != 0.0
+    #     write(io, ", wd=$(df_row.wdecay)")
+    # end
 
-    if "init_scale" in cols && df_row.init_scale != 1.0
-        write(io, ", is=$(df_row.init_scale)")
-    end
+    # if "init_scale" in cols && df_row.init_scale != 1.0
+    #     write(io, ", is=$(df_row.init_scale)")
+    # end
 
-    if "lr_decay" in cols
-        write(io, ", lrdc=$(df_row.lr_decay)")
-    end
+    # if "lr_decay" in cols
+    #     write(io, ", lrdc=$(df_row.lr_decay)")
+    # end
 
-    if "max_epochs" in cols
-        write(io, ", epochs=$(df_row.max_epochs)")
-    end
+    # if "max_epochs" in cols
+    #     write(io, ", epochs=$(df_row.max_epochs)")
+    # end
 
 
     return String(take!(io))
@@ -329,6 +348,7 @@ function plot_interpolation_threshold(id)
 
 end
 
+
 # max over nr_parameters
 # look at all measurements in ids for this, fix architecture (width and depth), take the best over all hyperparameters
 function plot_best(ids, root_path = ROOT_DIR; small_legend=false)
@@ -341,21 +361,23 @@ function plot_best(ids, root_path = ROOT_DIR; small_legend=false)
 
     ginfos = groupby(infos, [:layer])
 
-    shapes =  [:circle, :rect, :star5, :diamond, :hexagon, :cross, :xcross, :utriangle, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star8, :+, :x]
+    shapes =  [:rect, :circle, :star5, :diamond, :hexagon, :cross, :xcross, :utriangle, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star8, :+, :x]
 
     gpt = infos.model[1] == gpt2 || infos.model[1] == distil_gpt2
 
     P = if gpt
         if small_legend
-            plot(xlabel="nr parameters\n ", ylabel="\ntest perplexity", legend_position=:topright, size=(800, 600))
+            plot(xlabel="# Parameters\n ", ylabel="\nPerplexity", legend_position=:topright, size=(800, 600))
         else
-            plot(xlabel="nr parameters\n ", ylabel="test perplexity", legend_position=:outerleft, size=(1400, 800))
+            # plot(xlabel="# Parameters\n ", ylabel="Perplexity", legend_position=:outerleft, size=(1400, 800))
+            plot(xlabel="# Parameters\n ", ylabel="\nPerplexity", legend_position=:topright, size=(800, 600))
         end
     else
         if small_legend
-            plot(xlabel="nr parameters\n ", ylabel="\ntest accuracy", legend_position=:bottomright, size=(800, 600))
+            plot(xlabel="# Parameters\n ", ylabel="\nTest-Accuracy", legend_position=:bottomright, size=(800, 600))
         else
-            plot(xlabel="nr parameters\n ", ylabel="test accuracy", legend_position=:outerleft, size=(1400, 800))
+            # plot(xlabel="# Parameters\n ", ylabel="Test-Accuracy", legend_position=:outerleft, size=(1400, 800))
+            plot(xlabel="# Parameters\n ", ylabel="\nTest-Accuracy", legend_position=:bottomright, size=(800, 600))
         end
     end
 
@@ -374,7 +396,7 @@ function plot_best(ids, root_path = ROOT_DIR; small_legend=false)
         perm = sortperm(X)
 
         if small_legend
-            plot!(P, X[perm], y[perm], label=layer_infos.layer[1], color=palette(:tab10)[il])
+            plot!(P, X[perm], y[perm], label=layer_name(layer_infos.layer[1]), color=palette(:tab10)[il])
         else
             plot!(P, X[perm], y[perm], label=nothing, color=palette(:tab10)[il])
         end
@@ -405,12 +427,12 @@ function plot_projection_results(filename)
     # Group by label (no aggregation, just to separate the data for each label)
     grouped_df = groupby(df, :layer)
 
-    p = plot(size=(800, 600))  # Initialize the plot
+    p = plot(size=(800, 600), title="Projection")  # Initialize the plot
 
     # Loop through each group (each label) and plot it
     for group in grouped_df
         label_name = group[1, :layer]  # Get the label for the group
-        plot!(p, group.nr_parameters, group.norm, label=label_name, xlabel="nr parameters\n", ylabel="\nFrobenius Norm || W - W' ||")
+        plot!(p, group.nr_parameters, group.norm, label=label_name, xlabel="# Parameters\n", ylabel="\nApproximation Error || W - A ||")
     end
 
     # Display the plot

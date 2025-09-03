@@ -1,0 +1,67 @@
+layer,norm,nr_parameters,spec
+kronecker,57.301170349121094,1536,d=32
+kronecker,58.403499603271484,1920,d=16
+kronecker,56.041175842285156,4320,d=64
+kronecker,58.66667938232422,6336,d=8
+kronecker,57.234291076660156,24720,d=4
+kronecker,51.09413528442383,98436,d=2
+monarch,48.3965950012207,14464,nr_blocks=64
+monarch,48.7225341796875,16512,nr_blocks=32
+monarch,49.01714324951172,26752,nr_blocks=16
+monarch,48.03313446044922,50304,nr_blocks=8
+monarch,45.21467590332031,98944,nr_blocks=4
+monarch,36.93050765991211,196992,nr_blocks=2
+lowrank,57.872310638427734,3328,rank=1
+lowrank,53.9567756652832,12928,rank=4
+lowrank,50.06560516357422,25728,rank=8
+lowrank,44.381099700927734,51328,rank=16
+lowrank,36.488101959228516,102528,rank=32
+lowrank,29.7990665435791,153728,rank=48
+lowrank,23.957063674926758,204928,rank=64
+lowrank,13.833006858825684,307328,rank=96
+lowrank,4.5041399002075195,393728,rank=123
+BTT-2,45.6075439453125,32896,"2 cores, rank=1"
+BTT-2,37.89119338989258,65664,"2 cores, rank=2"
+BTT-2,32.400367736816406,98432,"2 cores, rank=3"
+BTT-2,28.103696823120117,131200,"2 cores, rank=4"
+BTT-2,24.581340789794922,163968,"2 cores, rank=5"
+BTT-2,21.61994171142578,196736,"2 cores, rank=6"
+BTT-2,19.009756088256836,229504,"2 cores, rank=7"
+BTT-2,16.67536735534668,262272,"2 cores, rank=8"
+BTT-2,14.5326566696167,295040,"2 cores, rank=9"
+BTT-2,12.528599739074707,327808,"2 cores, rank=10"
+BTT-2,10.656588554382324,360576,"2 cores, rank=11"
+lowrank-light,57.872310638427734,3327,rank=1
+lowrank-light,53.95680618286133,12912,rank=4
+lowrank-light,50.08611297607422,25664,rank=8
+lowrank-light,44.60977554321289,51072,rank=16
+lowrank-light,36.523807525634766,101504,rank=32
+lowrank-light,24.068317413330078,200832,rank=64
+lowrank-light,15.040242195129395,298112,rank=96
+lowrank-light,6.539305210113525,390399,rank=127
+blast8x8,57.43620300292969,3392,"nr_blocks=8, rank=1"
+blast8x8,40.654422760009766,52352,"nr_blocks=8, rank=16"
+blast8x8,18.189794540405273,209024,"nr_blocks=8, rank=64"
+blast8x8,9.025635719299316,313472,"nr_blocks=8, rank=96"
+blast8x8,3.2013630867004395,391808,"nr_blocks=8, rank=120"
+"unstructured, magnitude pruned",54.384891510009766,4061,density=1%
+"unstructured, magnitude pruned",51.569339752197266,7993,density=2%
+"unstructured, magnitude pruned",49.353179931640625,11925,density=3%
+"unstructured, magnitude pruned",47.47114181518555,15857,density=4%
+"unstructured, magnitude pruned",45.80643081665039,19789,density=5%
+"unstructured, magnitude pruned",44.29996871948242,23721,density=6%
+"unstructured, magnitude pruned",42.91671371459961,27654,density=7%
+"unstructured, magnitude pruned",41.63001251220703,31586,density=8%
+"unstructured, magnitude pruned",40.4258918762207,35518,density=9%
+"unstructured, magnitude pruned",39.28782272338867,39450,density=10%
+"unstructured, magnitude pruned",30.19516944885254,78772,density=20%
+"unstructured, magnitude pruned",23.392690658569336,118093,density=30%
+"unstructured, magnitude pruned",17.849685668945312,157415,density=40%
+"unstructured, magnitude pruned",13.189167022705078,196737,density=50%
+"unstructured, magnitude pruned",9.2402925491333,236058,density=60%
+"unstructured, magnitude pruned",4.469563961029053,295041,density=75%
+"unstructured, magnitude pruned",2.495633602142334,326498,density=83%
+"unstructured, magnitude pruned",1.480546236038208,346159,density=88%
+"unstructured, magnitude pruned",0.6585388779640198,365819,density=93%
+"unstructured, magnitude pruned",0.18290823698043823,381548,density=97%
+"unstructured, magnitude pruned",0.034793317317962646,389412,density=99%

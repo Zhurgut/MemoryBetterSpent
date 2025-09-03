@@ -7,8 +7,8 @@ import os
 import csv
 from datetime import datetime
 
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cpu")
 
 from transformers import AutoModel
 import torch
@@ -99,10 +99,11 @@ def save_results(file_name, columns, *data_rows):
 us_pfn = lambda p : f"density={p}%"
 lr_pfn = lambda r : f"rank={r}"
 lrl_pfn = lr_pfn
+kr_pfn = lambda p : f"d={p}"
 mn_pfn = lambda p : f"nr_blocks={p}"
 tt_pfn = lambda p : f"{p[0]} cores, rank={p[1]}"
-btt_pfn = tt_pfn
-bst_pfn = lambda p : f"block_size={p[0]}, rank={p[1]}"
+btt_pfn = lambda p : f"2 cores, rank={p}"
+bst_pfn = lambda p : f"nr_blocks={p[0]}, rank={p[1]}"
 
 def collect256(M, nr_runs, nr_steps):
     size = 256
@@ -228,7 +229,109 @@ def collect256(M, nr_runs, nr_steps):
     # run(args_blast2, Blast, "blast8x8", nr_runs, bst_pfn)
 
     save_results("p256", ["layer", "norm", "nr_parameters", "spec"], *results)
+
+
+def collect1296():
+
+    M = torch.randn(1296, 1296)
+    size = 1296
+
+    nr_steps = 5000
     
+    args_unstructured = [1, 10, 30, 50, 75, 83, 88, 93, 97, 99]
+
+    args_lowrank = [648, 384, 256, 196, 128, 96, 64, 48, 32, 16, 8, 4, 1]
+    args_lowrank_light = [1295, 1290, 1250, 1150, 1024, 768, 512, 384, 256, 196, 128, 96, 64, 32, 16, 8, 4, 1]
+
+    args_monarch1 = [2, 3, 4, 6, 8, 9, 12, 16, 18, 24, 27, 36]
+
+    args_kron1 = [2, 4, 8, 12, 18, 24, 36]
+
+    # args_kron1 = [2, 8, 36]
+
+    args_tt2 = [(2, 1), (2, 16), (2, 64), (2, 128), (2, 256), (2, 480), (2, 648)]
+
+    args_btt = [i for i in range(1, 19)]
+
+    # limits
+    # (4, 644)
+    # (8, 632)
+    # (12, 613)
+    args_blast4 = [(4, 16), (4, 64), (4, 256), (4, 644)]
+    args_blast8 = [(8, 16), (8, 64), (8, 256), (8, 632)]
+    args_blast12 = [(12, 16), (12, 64), (12, 256), (12, 480), (12, 613)]
+
+
+    results = []
+
+    def run(args, fn, label, nr_runs, pfn):
+    
+        def add_label(label, data, pfn, arg):
+            score, nparams = data
+            return (label, score, nparams, pfn(arg))
+
+        print(label)
+        out = None
+        if not isinstance(args[0], tuple):
+            out = [
+                add_label(
+                    label, 
+                    project(M, nr_runs, fn, args[i], nr_steps=nr_steps),
+                    pfn,
+                    args[i]
+                )
+                for i in range(len(args))
+            ]
+        else:
+            out = [
+                add_label(
+                    label,
+                    project(M, nr_runs, fn, *(args[i]), nr_steps=nr_steps),
+                    pfn,
+                    args[i]
+                )
+                for i in range(len(args))
+            ]
+        
+        out.sort(key=lambda x: x[2]) # sort by nr parameters
+
+        results.append(out)
+
+    run(args_kron1, Kronecker, "kronecker", 1, kr_pfn)
+
+    run(args_monarch1, Monarch, "monarch", 1, mn_pfn)
+
+    run(args_tt2, TT, "TT-2", 1, tt_pfn)
+    run(args_lowrank, LowRank, "lowrank", 1, lr_pfn)
+    run(args_btt, BTT2, "BTT-2", 1, btt_pfn)
+
+    run(args_lowrank_light, LowRankLight, "lowrank-light", 1, lr_pfn)
+
+    run(args_blast4, BlastPaper, "blast4x4", 1, bst_pfn)
+    run(args_blast12, BlastPaper, "blast12x12", 1, bst_pfn)
+
+    run(args_unstructured, Unstructured, "unstructured, magnitude pruned", 1, us_pfn)
+    
+    
+    
+    
+    # svd = torch.linalg.svdvals(M)
+    # lowrank_opt = [("LowRankOpt", sum(svd[rank:].pow(2)).sqrt().item(), nr_parameters(LowRank(size, size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
+    
+    # lowranklight_opt = [("lowrank_light_opt", sum(svd[rank:].pow(2)).sqrt().item(), 2*size*rank - rank*rank + size, lrl_pfn(rank)) for rank in args_lowrank_light]
+
+    
+
+    save_results("p1296", ["layer", "norm", "nr_parameters", "spec"], *results)
+    
+
+
+# collect1296()
+
+
+
+
+
 
 
 # def collect729(M, nr_runs, nr_steps, p=4):
@@ -352,20 +455,20 @@ def collect256(M, nr_runs, nr_steps):
 # project(l, 1e-2, 1000, Monarch, 64)
 
 
-l = nn.Linear(4, 4)
-w = torch.Tensor([
-    [1,  -1,  1, -1],
-    [-1,  1,  1, -1],
-    [1,  -1, -1,  1],
-    [-1,  1.1, -1,  1.0]
-])
+# l = nn.Linear(4, 4)
+# w = torch.Tensor([
+#     [1,  -1,  1, -1],
+#     [-1,  1,  1, -1],
+#     [1,  -1, -1,  1],
+#     [-1,  1.1, -1,  1.0]
+# ])
 
-l.weight = nn.Parameter(w)
-l.bias = nn.Parameter(torch.zeros(4))
-r = LowRankLight(4, 4, 2)
-r.project(l)
+# l.weight = nn.Parameter(w)
+# l.bias = nn.Parameter(torch.zeros(4))
+# r = LowRankLight(4, 4, 2)
+# r.project(l)
 
-print(r(torch.eye(4, 4)).T)
+# print(r(torch.eye(4, 4)).T)
 
 # # b = Blast(10, 20, 2, 6)
 # b = Blast(10, 40, 5, 6)
@@ -381,3 +484,130 @@ print(r(torch.eye(4, 4)).T)
 
 
 # print(nr_parameters(b) / nr_parameters(l))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def collecC10():
+
+    M = torch.load("cifar10weightSHUFFLED.pt")
+    print(M.shape)
+
+    nr_steps = 5000
+    
+    args_unstructured = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 75, 83, 88, 93, 97, 99]
+
+    args_lowrank = [123, 96, 64, 48, 32, 16, 8, 4, 1]
+    args_lowrank_light = [127, 96, 64, 32, 16, 8, 4, 1]
+
+    args_monarch1 = [2, 4, 8, 16, 32, 64]
+
+    args_kron1 = [2, 4, 8, 16, 32, 64]
+
+    # args_kron1 = [2, 8, 36]
+
+
+    args_btt = [i for i in range(1, 12)]
+
+    # limits
+    # (4, 644)
+    # (8, 632)
+    # (12, 613)
+    args_blast4 = [(4, 16), (4, 64), (4, 96), (4, 122)]
+    args_blast8 = [(8, 2), (8, 16), (8, 32), (8, 64), (8, 96), (8, 120)]
+    # args_blast12 = [(12, 16), (12, 64), (12, 256), (12, 480), (12, 613)]
+
+
+    results = []
+
+    def run(args, fn, label, nr_runs, pfn):
+    
+        def add_label(label, data, pfn, arg):
+            score, nparams = data
+            return (label, score, nparams, pfn(arg))
+
+        print(label)
+        out = None
+        if not isinstance(args[0], tuple):
+            out = [
+                add_label(
+                    label, 
+                    project(M, nr_runs, fn, args[i], nr_steps=nr_steps),
+                    pfn,
+                    args[i]
+                )
+                for i in range(len(args))
+            ]
+        else:
+            out = [
+                add_label(
+                    label,
+                    project(M, nr_runs, fn, *(args[i]), nr_steps=nr_steps),
+                    pfn,
+                    args[i]
+                )
+                for i in range(len(args))
+            ]
+        
+        out.sort(key=lambda x: x[2]) # sort by nr parameters
+
+        results.append(out)
+
+    # run(args_kron1, Kronecker, "kronecker", 3, kr_pfn)
+
+    run(args_monarch1, Monarch, "monarch", 1, mn_pfn)
+
+    # run(args_tt2, TT, "TT-2", 1, tt_pfn)
+    run(args_lowrank, LowRank, "lowrank", 1, lr_pfn)
+    run(args_lowrank_light, LowRankLight, "lowrank-light", 1, lr_pfn)
+
+    
+    run(args_btt, BTT2, "BTT-2", 1, btt_pfn)
+
+    
+
+    # run(args_blast4, BlastPaper, "blast4x4", 1, bst_pfn)
+    run(args_blast8, BlastPaper, "blast8x8", 1, bst_pfn)
+
+    run(args_unstructured, Unstructured, "unstructured, magnitude pruned", 1, us_pfn)
+    
+    
+    
+    
+    # svd = torch.linalg.svdvals(M)
+    # lowrank_opt = [("LowRankOpt", sum(svd[rank:].pow(2)).sqrt().item(), nr_parameters(LowRank(size, size, rank))) for rank in args_lowrank] # the indeces actually work out like this, because zero based indexing into array, but ranks start at 1
+    
+    # lowranklight_opt = [("lowrank_light_opt", sum(svd[rank:].pow(2)).sqrt().item(), 2*size*rank - rank*rank + size, lrl_pfn(rank)) for rank in args_lowrank_light]
+
+    
+
+    save_results("c10", ["layer", "norm", "nr_parameters", "spec"], *results)
+
+
+
+collecC10()
+

@@ -1,0 +1,14 @@
+\begin{table}[h!]
+\centering
+\tiny
+\caption{Using structured sparsity to train wider models}
+\label{tab:wider-models}
+\begin{tabular}{lrccccl}
+$\text{Model}$ & $\text{\# Parameters}$ & $\text{Model Width}$ & $\text{\# Heads}$ & $\text{\# Transformer Blocks}$ & $\text{Best Test Accuracy}$\\
+$\text{Dense, run 1}$ & $2428040$ & $192$ & $12$ & $9$ & $\text{61.86 \%}$\\
+$\text{Dense, run 2}$ & $2428040$ & $192$ & $12$ & $9$ & $\text{60.96 \%}$\\
+$\text{Low-Rank, rank=72}$ & $2397800$ & $288$ & $16$ & $9$ & $\text{60.44 \%}$\\
+$\text{Low-Rank, rank=48}$ & $2426696$ & $384$ & $16$ & $10$ & $\text{61.13 \%}$\\
+\end{tabular}
+
+\end{table}

@@ -12,7 +12,7 @@ wdecay = [0.02]
 #     dataset=tiny_imagenet,
 #     width=384,
 #     depth=10,
-#     lr=[6e-4],
+#     lr=[8e-4],
 #     bs=256,
 #     max_epochs=1600,
 #     weight_decay=[0.04],
@@ -23,7 +23,8 @@ wdecay = [0.02]
 #     id=base_id+9,
 #     patch_size=8,
 #     nr_heads=16,
-#     rank=48
+#     rank=48,
+#     nr_runs=2
 # )
 
 # collect_measurements(
@@ -46,25 +47,25 @@ wdecay = [0.02]
 #     rank=72
 # )
 
-collect_measurements(
-    layer=lowranklight,
-    model=vit2,
-    dataset=tiny_imagenet,
-    width=224,
-    depth=9,
-    lr=[6e-4],
-    bs=256,
-    max_epochs=1600,
-    weight_decay=[0.03],
-    lr_decay=true,
-    early_stopping=false,
-    dropout=0.1,
-    max_bs=1000,
-    id=base_id+9,
-    patch_size=8,
-    nr_heads=14,
-    rank=123
-)
+# collect_measurements(
+#     layer=lowranklight,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=224,
+#     depth=9,
+#     lr=[6e-4],
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=[0.03],
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     id=base_id+9,
+#     patch_size=8,
+#     nr_heads=14,
+#     rank=123
+# )
 
 
 
@@ -144,6 +145,30 @@ collect_measurements(
 # 22 old initialization
 # 23 new my initialization
 # 24 paper initialization
+
+
+
+
+collect_measurements(
+    layer=btt,
+    model=vit2,
+    dataset=tiny_imagenet,
+    width=192,
+    depth=9,
+    lr=[3e-3],
+    bs=256,
+    max_epochs=1600,
+    weight_decay=[0.02],
+    lr_decay=true,
+    early_stopping=false,
+    dropout=0.1,
+    max_bs=1000,
+    id=39,
+    patch_size=8,
+    nr_heads=12,
+    rank=6,
+    nr_runs=2
+)
 
 
 

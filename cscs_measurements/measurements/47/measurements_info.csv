@@ -2,6 +2,6 @@ layer,kwargs,model,width,depth,lr,bs,max_epochs,wdecay,init_scale,dropout,measur
 blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 32)",vit2,192,9,0.003,256,800,0.02,1.0,0.1,1,tiny_imagenet,true,false,1000,1,true,801416,0.5879200100898743,0.4964999854564667,791,761
 blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.003,256,800,0.02,1.0,0.1,2,tiny_imagenet,true,false,1000,1,true,1323272,0.6484900116920471,0.5217999815940857,801,771
 blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 80)",vit2,192,9,0.003,256,800,0.02,1.0,0.1,3,tiny_imagenet,true,false,1000,1,true,1845128,0.6703999638557434,0.5307999849319458,801,720
-blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 32)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,4,tiny_imagenet,true,false,1000,1,true,801416,0.6324099898338318,0.5166000127792358,1561,1464
-blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,5,tiny_imagenet,true,false,1000,1,true,1323272,0.7109900116920471,0.5537999868392944,1581,1529
-blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 80)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,6,tiny_imagenet,true,false,1000,1,true,1845128,0.7424399852752686,0.5612999796867371,1591,1549
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 32)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,4,tiny_imagenet,true,false,1000,2,true,801416,0.6390900015830994,0.5217500030994415,1561,1482
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 56)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,5,tiny_imagenet,true,false,1000,2,true,1323272,0.7102800011634827,0.5541499853134155,1556,1536
+blast,"(patch_size = 8, nr_heads = 12, block_size = 48, rank = 80)",vit2,192,9,0.003,256,1600,0.02,1.0,0.1,6,tiny_imagenet,true,false,1000,2,true,1845128,0.7346799969673157,0.5606999695301056,1596,1564

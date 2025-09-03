@@ -294,7 +294,7 @@ class LowRankLight(Projectable):
 
         # self.project(nn.Linear(in_dim, out_dim))
 
-        self.regularization = 3e-3
+        self.regularization = 5e-5
 
     def forward(self, x):
         M = x.shape[-1]
@@ -655,39 +655,65 @@ class TT(Projectable):
 
 
 
+def factorize(x):
+    best_pair = None
+    best_score = float("inf")
+    for b in range(1, int(math.isqrt(x)) + 1):
+        if x % b == 0:
+            a = x // b
+            score = abs(a - math.isqrt(x)) + abs(b - math.isqrt(x))
+            if score < best_score:
+                best_score = score
+                best_pair = (a, b)
+    return best_pair
+
+
+
+
+
+
 
 
 class BTT2(Projectable):
 
+
     def __init__(self, in_dim, out_dim, rank):
         super().__init__(in_dim, out_dim)
 
-        self.in_core_size  = int(round(in_dim  ** (0.5)))
-        self.out_core_size = int(round(out_dim ** (0.5)))
+        self.in1, self.in2 = factorize(in_dim)
+        self.out1, self.out2 = factorize(out_dim)
 
-        assert self.in_core_size ** 2  == in_dim
-        assert self.out_core_size ** 2 == out_dim
+        assert self.in1 * self.in2 == in_dim
+        assert self.out1 * self.out2 == out_dim
 
 
         self.rank = rank
 
         self.L = nn.Parameter(nn.init.kaiming_uniform_(
-            torch.empty(self.out_core_size, self.out_core_size, self.in_core_size, self.rank)
+            torch.empty(self.out1, self.out2, self.in1, self.rank)
         ))
         self.R = nn.Parameter(nn.init.kaiming_uniform_(
-            torch.empty(self.rank, self.out_core_size, self.in_core_size, self.in_core_size)
+            torch.empty(self.rank, self.out2, self.in1, self.in2)
         ))
 
         self.bias = nn.Parameter(
             nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze()
         )
 
+        l = nn.Linear(in_dim, out_dim)
+        self.project(l)
+
+
     def forward(self, x):
         x, shape = to2D(x)
 
-        out = torch.einsum("sbgd,Bgd->Bsbg", self.R, x.reshape(-1, self.in_core_size, self.in_core_size))
-        out = torch.einsum("Bsbg,abgs->Bab", out, self.L)
-        out = out.reshape(-1, self.out_dim) + self.bias
+        W = torch.einsum("abcr,rbcd->abcd", self.L, self.R).reshape(self.out_dim, self.in_dim)
+
+        # out = torch.einsum("sbgd,Bgd->Bsbg", self.R, x.reshape(-1, self.in1, self.in2))
+        # out = torch.einsum("Bsbg,abgs->Bab", out, self.L)
+        # out = out.reshape(-1, self.out_dim) + self.bias
+
+        out = torch.addmm(self.bias, x, W.T)
 
         return undo_to2D(out, shape)
 
@@ -697,17 +723,17 @@ class BTT2(Projectable):
         out_dim, in_dim = fn.weight.shape
         assert self.in_dim == in_dim and self.out_dim == out_dim
 
-        b_out = self.out_core_size 
-        b_in = self.in_core_size    
+        b_out1 = self.out1
+        b_out2 = self.out2
+        b_in1 = self.in1
+        b_in2 = self.in2
 
-        # assert b_out == b_in, "This routine assumes square block/core sizes."
-
-        A = fn.weight.reshape(b_out, b_out, b_in, b_in)
+        A = fn.weight.reshape(b_out1, b_out2, b_in1, b_in2)
 
         with torch.no_grad():
 
-            for k in range(b_in):    
-                for j in range(b_out):   
+            for k in range(b_in1):    
+                for j in range(b_out2):   
 
                     M_blocklike = A[:, j, k, :]
 
@@ -718,12 +744,8 @@ class BTT2(Projectable):
                     U_r = U[:, :self.rank]         
                     Vh_r = Vh[:self.rank, :]              
 
-                    target_L = self.L[:, j, k, :self.rank]
-
-                    target_L.copy_(U_r * d.unsqueeze(0))
-
-                    target_R = self.R[:self.rank, j, k, :]
-                    target_R.copy_(d.unsqueeze(1) * Vh_r)
+                    self.L[:, j, k, :] = U_r * d.unsqueeze(0)  
+                    self.R[:, j, k, :] = d.unsqueeze(1) * Vh_r 
 
             if fn.bias is not None:
                 self.bias = nn.Parameter(fn.bias.clone().detach())
@@ -905,32 +927,38 @@ class AbstractBlast(Projectable):
             # compute B @ A.inverse()
             return torch.linalg.solve(A.T, B.T).T
 
-        nr_steps = 500
-        for k in range(nr_steps):
-            # print(k)
-            eta = (nr_steps - k) * 1e-3
+        with torch.no_grad():
+            nr_steps = 1500
+            for k in range(nr_steps):
+                # print(k)
+                eta = math.sqrt((nr_steps - k) / nr_steps) * 0.5
 
-            u_new = torch.empty_like(self.U)
-            v_new = torch.empty_like(self.Vt)
-            s_new = torch.empty_like(self.S)
+                u_new = torch.empty_like(self.U)
+                v_new = torch.empty_like(self.Vt)
+                s_new = torch.empty_like(self.S)
 
-            for i in range(self.b_out):
-                vbar = V_bar(i)
-                u_new[i, :, :] = (
-                    U_(i) - eta * solve2(   (U_(i) @ vbar.T - A[i*bo:(i+1)*bo, :]) @ vbar, Pu_inv(i)  )
-                ).T
+                try:
 
-            for j in range(self.b_in):
-                ubar = U_bar(j)
-                v_new[j, :, :] = V_(j) - eta * solve2(   (ubar @ V_(j).T - A[:, j*bi:(j+1)*bi]).T @ ubar, Pv_inv(j)   )
+                    for i in range(self.b_out):
+                        vbar = V_bar(i)
+                        u_new[i, :, :] = (
+                            U_(i) - eta * solve2(   (U_(i) @ vbar.T - A[i*bo:(i+1)*bo, :]) @ vbar, Pu_inv(i)  )
+                        ).T
 
-            for i in range(self.b_out): # b_out
-                for j in range(self.b_in): # b_in
-                    s_new[i, j, :] = S_(i,j) - eta * torch.linalg.solve(Ps_inv(i, j), S_(i,j) @ W(i,j).T - (u_new[i, :, :] @ A_(i,j) @ v_new[j, :, :]).diag())
+                    for j in range(self.b_in):
+                        ubar = U_bar(j)
+                        v_new[j, :, :] = V_(j) - eta * solve2(   (ubar @ V_(j).T - A[:, j*bi:(j+1)*bi]).T @ ubar, Pv_inv(j)   )
 
-            self.U = nn.Parameter(u_new)
-            self.Vt = nn.Parameter(v_new)
-            self.S = nn.Parameter(s_new)
+                    for i in range(self.b_out): # b_out
+                        for j in range(self.b_in): # b_in
+                            s_new[i, j, :] = S_(i,j) - eta * torch.linalg.solve(Ps_inv(i, j), S_(i,j) @ W(i,j).T - (u_new[i, :, :] @ A_(i,j) @ v_new[j, :, :]).diag())
+
+                    self.U = nn.Parameter(u_new)
+                    self.Vt = nn.Parameter(v_new)
+                    self.S = nn.Parameter(s_new)
+                
+                except:
+                    break
     
     
     def project(self, fn):
