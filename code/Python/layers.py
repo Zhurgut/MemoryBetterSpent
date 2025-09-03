@@ -141,7 +141,7 @@ class Unstructured(MaskedSparse):
 
     def __init__(self, in_dim, out_dim, density):
 
-        density = density / 100  # pass arg as percentage
+        density = density / 100  # pass arg as integer percentage
 
         self.density = density
 
@@ -221,14 +221,6 @@ class BlockSparse(MaskedSparse):
         self.bias = nn.Parameter(fn.bias.clone().detach())
 
 
-# bound = 1 / sqrt(in_dim)
-# self.A = nn.Parameter(nn.init.uniform_(torch.empty(out_dim, rank), a=-bound, b=bound))
-
-# b = F.normalize(nn.init.normal_(torch.empty(rank, in_dim)), p=2, dim=0)
-
-# self.B = nn.Parameter(b * 0.5*bound / (bound / sqrt(3)))
-
-# self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
 
 
 class LowRank(Projectable):
@@ -276,42 +268,24 @@ class LowRankLight(Projectable):
         self.in_dim = in_dim
         self.rank = rank
 
-        bound = 1 / math.sqrt(in_dim)
-        self.A = nn.Parameter(
-            nn.init.uniform_(torch.empty(out_dim, rank), a=-bound, b=bound)
-        )
-        # self.A = nn.Parameter(nn.init.kaiming_normal_(torch.empty(out_dim, rank)))
-
-        b = F.normalize(nn.init.normal_(torch.empty(rank, in_dim - rank)), p=2, dim=0)
-
-        self.B = nn.Parameter(
-            b * 0.5 * bound / (bound / math.sqrt(3))
-        )  # now all values in [A; A*B] roughly from the same distribution as A, which is the same distribution as nn.Linear
-
-        self.bias = nn.Parameter(
-            nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze()
-        )
-
-        # self.project(nn.Linear(in_dim, out_dim))
+        self.project(nn.Linear(in_dim, out_dim))
 
         self.regularization = 5e-5
 
-    def forward(self, x):
-        M = x.shape[-1]
-        BS = math.prod(x.shape[:-1])
-        shape = x.shape
-        X = x.reshape(BS, M)
 
-        X_a = X[:, : self.rank]
-        X_ab = X[:, self.rank :]
+    def forward(self, x):
+        X, shape = to2D(x)
+
+        X_a = X[:, :self.rank]
+        X_ab = X[:, self.rank:]
 
         mid = torch.addmm(X_a, X_ab, self.B.T)
         out = torch.addmm(self.bias, mid, self.A.T)
 
-        return out.reshape(*(shape[:-1]), -1)
-    
+        return undo_to2D(out, shape)
 
-    def project_regularized(self, fn, l):
+
+    def project(self, fn):
 
         out_dim, in_dim = fn.weight.shape
         assert self.in_dim == in_dim and self.out_dim == out_dim
@@ -331,27 +305,18 @@ class LowRankLight(Projectable):
         W1 = fn.weight[:, :rank]
         W2 = fn.weight[:, rank:]
 
-        # solve A*B = W2 with ridge regression
-        h = l * torch.trace(out_A.T @ out_A) / rank
+        
+        h = self.regularization * torch.trace(out_A.T @ out_A) / rank
 
+        # solve A*B = W2 with ridge regression
         out_B = torch.linalg.solve(
             out_A.T @ out_A + h * torch.eye(rank, rank, device=out_A.device), out_A.T @ W2
         )
-        # out_B = torch.linalg.lstsq(out_A, W2).solution
 
         self.A = nn.Parameter(out_A)
         self.B = nn.Parameter(out_B)
 
-        # print(self.A.abs().max(), " - ", self.B.abs().max())
-
-
         self.bias = nn.Parameter(fn.bias.clone().detach())
-
-
-
-    def project(self, fn):
-
-        self.project_regularized(fn, self.regularization)
 
 
 
@@ -827,16 +792,6 @@ class AbstractBlast(Projectable):
 
         self.S = nn.Parameter(nn.init.uniform_(torch.empty(self.b_out, self.b_in, rank), a=0, b=1))  # just like in paper
 
-        # with S fixed like this, and U, V having entries drawn from Unif(-b, b), we expect a distribution in the manifested matrix of roughly N(0, 4nb^4/27),
-        # that is a standart deviation of 2sqrt(n)b^2/(3*sqrt(3)), where n is the rank here
-        # to mimic dense, we want that the standart deviation = 1/2 * k, where entries in dense are drawn from Unif(-k, k), k = 1/sqrt(in_dim)
-        # therefor we chose
-        bound = math.sqrt(math.sqrt(27) / (4 * rank))
-
-        # self.U = nn.Parameter(nn.init.uniform_(torch.empty(b_out, rank, block_size), a=-bound, b=bound))
-        # self.Vt = nn.Parameter(nn.init.uniform_(torch.empty(b_in, block_size, rank), a=-bound, b=bound))
-
-        # in the paper:
         self.U = nn.Parameter(
             nn.init.normal_(
                 torch.empty(self.b_out, rank, self.block_size_out), mean=0, std=math.sqrt(0.02)
@@ -850,7 +805,8 @@ class AbstractBlast(Projectable):
 
         self.bias = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, out_dim)).squeeze())
 
-    def weight(self, x):
+    def weight(self):
+        x = torch.eye(self.in_dim, self.in_dim, device=x.device)
         BS, M = x.shape
         xp = x.reshape(BS, -1, self.block_size_in).transpose(0, 1)  # b, BS, block_size
         y = torch.bmm(xp, self.Vt)  # b, BS, rank
@@ -864,7 +820,7 @@ class AbstractBlast(Projectable):
     def forward(self, x):  # much faster
         x, shape = to2D(x)
 
-        W = self.weight(torch.eye(self.in_dim, self.in_dim, device=x.device))
+        W = self.weight()
 
         out = torch.addmm(self.bias, x, W)
 

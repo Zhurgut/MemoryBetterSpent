@@ -8,7 +8,7 @@ const ROOT_DIR = joinpath(@__DIR__, "..")
 
 @enum Layer dense lowrank lowranklight monarch kronecker tt btt blast unstructured
 @enum Model mlp mlp2 b_mlp b_mlp2 vit vit2 gpt2 distil_gpt2
-@enum Dataset simple cifar10 tiny_imagenet wikitext2
+@enum Dataset cifar10 tiny_imagenet wikitext2
 
 struct Measurements
     layers::Vector{Tuple{Layer, NamedTuple}}

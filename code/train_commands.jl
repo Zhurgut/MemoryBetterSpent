@@ -380,3 +380,611 @@ collect_measurements(
     id=100,
 )
 
+
+
+
+# collect_measurements(
+#     layer=dense,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.05,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id,
+#     patch_size=8,
+#     nr_heads=12
+# )
+
+
+
+
+
+
+
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.03,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 1,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=128
+# )
+
+
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.02,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 1,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=96
+# )
+
+
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.03,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 1,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=48
+# )
+
+
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.03,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 3,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=24
+# )
+
+
+
+
+
+
+# collect_measurements(
+#     layer=lowranklight,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.02,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 2,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=96
+# )
+
+# collect_measurements(
+#     layer=lowranklight,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.02,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 2,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=48
+# )
+
+# collect_measurements(
+#     layer=lowranklight,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.02,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 3,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=24
+# )
+
+
+
+
+
+
+
+
+
+
+# collect_measurements(
+#     layer=blast,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=3e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.02,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 7,
+#     patch_size=8,
+#     nr_heads=12,
+#     block_size=48,
+#     rank=80,
+# )
+
+# collect_measurements(
+#     layer=blast,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=3e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.02,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     nr_runs=nr_runs,
+#     id=base_id + 7,
+#     patch_size=8,
+#     nr_heads=12,
+#     block_size=48,
+#     rank=56,
+# )
+
+collect_measurements(
+    layer=blast,
+    model=vit2,
+    dataset=tiny_imagenet,
+    width=192,
+    depth=9,
+    lr=3e-3,
+    bs=256,
+    max_epochs=1600,
+    weight_decay=0.02,
+    lr_decay=true,
+    early_stopping=false,
+    dropout=0.1,
+    max_bs=1000,
+    nr_runs=nr_runs,
+    id=base_id + 7,
+    patch_size=8,
+    nr_heads=12,
+    block_size=48,
+    rank=32,
+)
+
+
+
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=384,
+#     depth=10,
+#     lr=[8e-4],
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=[0.04],
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     id=base_id+9,
+#     patch_size=8,
+#     nr_heads=16,
+#     rank=48,
+#     nr_runs=2
+# )
+
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=288,
+#     depth=9,
+#     lr=[8e-4],
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=[0.04],
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     id=base_id+9,
+#     patch_size=8,
+#     nr_heads=16,
+#     rank=72
+# )
+
+# collect_measurements(
+#     layer=lowranklight,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=224,
+#     depth=9,
+#     lr=[6e-4],
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=[0.03],
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     id=base_id+9,
+#     patch_size=8,
+#     nr_heads=14,
+#     rank=123
+# )
+
+
+
+
+# collect_measurements(
+#     layer=lowrank,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=0.03,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     id=base_id + 1,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=128
+# )
+
+
+# collect_measurements(
+#     layer=lowranklight,
+#     model=vit2,
+#     dataset=tiny_imagenet,
+#     width=192,
+#     depth=9,
+#     lr=1e-3,
+#     bs=256,
+#     max_epochs=1600,
+#     weight_decay=wdecay,
+#     lr_decay=true,
+#     early_stopping=false,
+#     dropout=0.1,
+#     max_bs=1000,
+#     id=base_id + 2,
+#     patch_size=8,
+#     nr_heads=12,
+#     rank=96
+# )
+
+
+# for rank in [32, 56, 80]
+# for rank in [80]
+
+#     collect_measurements(
+#         layer=blast,
+#         model=vit2,
+#         dataset=tiny_imagenet,
+#         width=192,
+#         depth=9,
+#         lr=3e-3,
+#         bs=256,
+#         max_epochs=1600,
+#         weight_decay=0.02,
+#         lr_decay=true,
+#         early_stopping=false,
+#         dropout=0.1,
+#         max_bs=1000,
+#         id=base_id + 7,
+#         # id=53,
+#         patch_size=8,
+#         nr_heads=12,
+#         block_size=48,
+#         rank=rank,
+
+#     )
+
+# end
+
+
+
+# 22 old initialization
+# 23 new my initialization
+# 24 paper initialization
+
+
+
+
+collect_measurements(
+    layer=btt,
+    model=vit2,
+    dataset=tiny_imagenet,
+    width=192,
+    depth=9,
+    lr=[3e-3],
+    bs=256,
+    max_epochs=1600,
+    weight_decay=[0.02],
+    lr_decay=true,
+    early_stopping=false,
+    dropout=0.1,
+    max_bs=1000,
+    id=39,
+    patch_size=8,
+    nr_heads=12,
+    rank=6,
+    nr_runs=2
+)
+
+
+
+
+
+wdecays = [0.0, 0.01]
+epochs = 25
+decay = true
+base_id = 70
+
+collect_measurements(
+    layer=dense,
+    model=gpt2,
+    dataset=wikitext2,
+    width=0,
+    depth=0,
+    lr=2e-5,
+    bs=8,
+    max_epochs=15,
+    max_bs=4,
+    lr_decay=false,
+    weight_decay=0.01,
+    id=base_id,
+)
+
+
+
+for rank in [704, 640, 512, 384]
+# for rank in [128]
+
+    collect_measurements(
+        layer=lowrank,
+        model=gpt2,
+        dataset=wikitext2,
+        width=0,
+        depth=0,
+        lr=1e-5,
+        bs=8,
+        max_epochs=25,
+        max_bs=4,
+        lr_decay=true,
+        weight_decay=0.01,
+        id=base_id+1,
+        rank=rank
+    )
+
+    collect_measurements(
+        layer=lowranklight,
+        model=gpt2,
+        dataset=wikitext2,
+        width=0,
+        depth=0,
+        lr=[1e-5, 5e-6, 2e-6, 1e-6],
+        bs=8,
+        max_epochs=25,
+        max_bs=4,
+        lr_decay=true,
+        weight_decay=0.0,
+        # id=base_id+2,
+        id=base_id+10,
+        rank=rank
+    )
+    
+end
+
+
+for rank in [128, 256, 384]
+
+    # collect_measurements(
+    #     layer=lowrank,
+    #     model=gpt2,
+    #     dataset=wikitext2,
+    #     width=0,
+    #     depth=0,
+    #     lr=5e-5,
+    #     bs=8,
+    #     max_epochs=40,
+    #     max_bs=4,
+    #     lr_decay=true,
+    #     weight_decay=[0.0, 0.01],
+    #     id=base_id+1,
+    #     rank=rank
+    # )
+
+    collect_measurements(
+        layer=lowranklight,
+        model=gpt2,
+        dataset=wikitext2,
+        width=0,
+        depth=0,
+        lr=[2e-5, 1e-5, 7e-6, 5e-6],
+        bs=8,
+        max_epochs=25,
+        max_bs=4,
+        lr_decay=false,
+        weight_decay=0.0,
+        # id=base_id+7,
+        id=base_id+12,
+        rank=rank
+    )
+
+    # +7 precise projection
+    # +10 new best great improved regularized projection 1e-3
+    # +11 new best great improved regularized projection 1e-2
+    # +12 new best great improved regularized projection 3e-3
+end
+
+
+for n=[2, 4]
+
+    collect_measurements(
+        layer=monarch,
+        model=gpt2,
+        dataset=wikitext2,
+        width=0,
+        depth=0,
+        lr=[4e-4, 2e-4, 1e-4, 5e-5],
+        bs=8,
+        max_epochs=30,
+        max_bs=4,
+        lr_decay=false,
+        weight_decay=0.0,
+        id=base_id+9,
+        nr_blocks=n
+    )
+end
+
+
+
+
+collect_measurements(
+    layer=unstructured,
+    model=gpt2,
+    dataset=wikitext2,
+    width=0,
+    depth=0,
+    lr=1e-5,
+    bs=8,
+    max_epochs=10,
+    max_bs=4,
+    lr_decay=true,
+    weight_decay=0.0,
+    id=base_id+5,
+    density=[50, 70]
+)
+
+
+
+collect_measurements(
+    layer=unstructured,
+    model=gpt2,
+    dataset=wikitext2,
+    width=0,
+    depth=0,
+    lr=[2e-4, 1e-4, 5e-5],
+    bs=8,
+    max_epochs=40,
+    max_bs=4,
+    lr_decay=true,
+    weight_decay=0.005,
+    id=base_id+5,
+    density=30
+)
+
+
+
+collect_measurements(
+    layer=blast,
+    model=gpt2,
+    dataset=wikitext2,
+    width=0,
+    depth=0,
+    lr=[6e-6, 3e-6],
+    bs=8,
+    max_epochs=40,
+    max_bs=4,
+    lr_decay=false,
+    weight_decay=0.0,
+    id=base_id+8,
+    block_size=[128, 128],
+    rank=[256, 128]
+)
+
+

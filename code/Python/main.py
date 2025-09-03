@@ -63,7 +63,6 @@ MODELS = {
 
 DATASETS = {
     "cifar10": dataset_loader.cifar10,
-    "simple": dataset_loader.simple,
     "tiny_imagenet": dataset_loader.tiny_imagenet,
     "wikitext2": dataset_loader.wikitext2
 }

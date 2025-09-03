@@ -514,7 +514,7 @@ def collect1296():
 
 def collecC10():
 
-    M = torch.load("cifar10weightSHUFFLED.pt")
+    M = torch.load("cifar10weight.pt")
     print(M.shape)
 
     nr_steps = 5000
@@ -591,7 +591,7 @@ def collecC10():
     
 
     # run(args_blast4, BlastPaper, "blast4x4", 1, bst_pfn)
-    run(args_blast8, BlastPaper, "blast8x8", 1, bst_pfn)
+    # run(args_blast8, BlastPaper, "blast8x8", 1, bst_pfn)
 
     run(args_unstructured, Unstructured, "unstructured, magnitude pruned", 1, us_pfn)
     
