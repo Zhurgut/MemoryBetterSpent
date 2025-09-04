@@ -196,7 +196,7 @@ function plot_projection_results(filename)
     # Loop through each group (each label) and plot it
     for group in grouped_df
         label_name = group[1, :layer]  # Get the label for the group
-        plot!(p, group.nr_parameters, group.norm, label=label_name, xlabel="# Parameters\n", ylabel="\nApproximation Error || W - A ||")
+        plot!(p, group.nr_parameters, group.norm, label=label_name, xlabel="# Parameters\n", ylabel="\nApproximation Error ‖ W - M ‖")
     end
 
     # Display the plot
