@@ -8,6 +8,7 @@ file = open("out/info.txt", "w")
 
 
 centered = False
+inverted = True
 
 
 
@@ -33,6 +34,12 @@ def load_image_split_channels(img_path):
         g = img[1] * 2 - 1
         b = img[2] * 2 - 1
     
+    elif inverted:
+
+        r = 1 - img[0]
+        g = 1 - img[1]
+        b = 1 - img[2]
+    
     else:
 
         r = img[0]
@@ -52,8 +59,9 @@ def save_image_from_channels(r, g, b, out_path):
     img = torch.stack([r, g, b], dim=0)  # (3, H, W)
 
     if centered:
-        img = torch.clamp(img, -1.0, 1.0)     # Safety clamp
-        img = (img + 1) * 0.5
+        img = torch.clamp((img + 1) * 0.5, 0, 1.0)     # Safety clamp
+    elif inverted: 
+        img = torch.clamp(1 - img, 0.0, 1.0)
     else:
         img = torch.clamp(img, 0.0, 1.0)
 
@@ -78,6 +86,8 @@ def compress_channel(img, layer, print_info=False):
     l.bias = nn.Parameter(torch.zeros(h))
     l.weight = nn.Parameter(img)
 
+
+    # layer.project_no_magnitude_pruning(l)
     layer.project(l)
 
     return layer(torch.eye(w, w)).T
@@ -93,14 +103,29 @@ def compress(layer, img_path, out_img_name):
     gc = compress_channel(g, layer)
     bc = compress_channel(b, layer)
 
+
     save_image_from_channels(rc, gc, bc, f"./out/{out_img_name}.png")
 
     
 
 # load_image_split_channels("chevy.jpg") # size 776 - 1156
 
-# compress(Unstructured(1156, 776, 7), "chevy.jpg", "Unstructured 7%")
-# compress(Unstructured(1156, 776, 20), "chevy.jpg", "Unstructured 20%")
+compress(Unstructured(1156, 776, 4), "chevy.jpg", "ppp_UnstructuredInv4")
+compress(Unstructured(1156, 776, 5), "chevy.jpg", "ppp_UnstructuredInv5")
+compress(Unstructured(1156, 776, 6), "chevy.jpg", "ppp_UnstructuredInv6")
+compress(Unstructured(1156, 776, 7), "chevy.jpg", "ppp_UnstructuredInv7")
+compress(Unstructured(1156, 776, 8), "chevy.jpg", "ppp_UnstructuredInv8")
+compress(Unstructured(1156, 776, 9), "chevy.jpg", "ppp_UnstructuredInv9")
+compress(Unstructured(1156, 776, 10), "chevy.jpg", "ppp_UnstructuredInv10")
+compress(Unstructured(1156, 776, 11), "chevy.jpg", "ppp_UnstructuredInv11")
+compress(Unstructured(1156, 776, 12), "chevy.jpg", "ppp_UnstructuredInv12")
+
+# compress(Unstructured(1156, 776, 1), "chevy.jpg", "Unstructured 1%")
+# compress(Unstructured(1156, 776, 2), "chevy.jpg", "Unstructured 2%")
+# compress(Unstructured(1156, 776, 3), "chevy.jpg", "Unstructured 3%")
+# compress(Unstructured(1156, 776, 4), "chevy.jpg", "Unstructured 4%")
+# compress(Unstructured(1156, 776, 5), "chevy.jpg", "Unstructured 5%")
+
 
 
 # for i in [2, 15]:
@@ -147,12 +172,12 @@ def compress(layer, img_path, out_img_name):
 # compress(Kronecker(1152, 768, 32), "chevy.jpg", "Kronecker 32")
 
 # compress(TT(1156, 729, 2, 1), "chevy.jpg", "TT d=2 k=1")
-compress(TT(1000, 729, 3, 1), "chevy.jpg", "TT d=3 k=1")
-compress(TT(1000, 729, 3, 4), "chevy.jpg", "TT d=3 k=4")
+# compress(TT(1000, 729, 3, 1), "chevy.jpg", "TT d=3 k=1")
+# compress(TT(1000, 729, 3, 4), "chevy.jpg", "TT d=3 k=4")
 # compress(TT(625, 625, 2, 1), "chevy.jpg", "TT d=4 k=1")
 
 # compress(TT(1156, 729, 2, 20), "chevy.jpg", "TT d=2 k=20")
-compress(TT(1000, 729, 3, 20), "chevy.jpg", "TT d=3 k=20")
+# compress(TT(1000, 729, 3, 20), "chevy.jpg", "TT d=3 k=20")
 
 
 file.close()
