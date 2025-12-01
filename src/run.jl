@@ -119,7 +119,7 @@ function collect_measurements(;
             mkdir(joinpath(ROOT_DIR, "measurements"))
         end
         
-        ids = parse.(Int, cd(readdir, joinpath(ROOT_DIR, "measurements")))
+        ids = parse.(Int, filter(x->!contains("p")(x), cd(readdir, joinpath(ROOT_DIR, "measurements"))))
         if length(ids) == 0
             id = 0
         else
