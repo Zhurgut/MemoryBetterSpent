@@ -90,6 +90,7 @@ function projection_stuff(plot_out, table_out_file, file, label="")
 
     P = plot_projection_results(file)
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".png"))
 
     df = CSV.read(joinpath(@__DIR__, "..", "measurements/projection", file), DataFrame)
 
@@ -131,10 +132,12 @@ function fine_tuning_stuff(plot_out, table_out)
     P = plot_best(ids, root_path, small_legend=true)
     plot!(P, title="Fine-Tuning GPT-2 small (124M) on Wikitext-2")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".png"))
 
     P = plot_best(ids, root_path, small_legend=false)
     plot!(P, title="Fine-Tuning GPT-2 small (124M) on Wikitext-2")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.pdf"))
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.png"))
 
     infos = load_measurements_infos(ids, root_path) 
     infos = infos[infos.done, :]
@@ -213,10 +216,12 @@ function pretraining_stuff(plot_out, table_out)
     P = plot_best(ids, joinpath(ROOT_DIR, "cscs_measurements/"), small_legend=true)
     plot!(P, title="Pre-Training ViTs on Tiny-ImageNet")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".pdf"))
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * ".png"))
 
     P = plot_best(ids, joinpath(ROOT_DIR, "cscs_measurements/"), small_legend=false)
     plot!(P, title="Pre-Training ViTs on Tiny-ImageNet")
     savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.pdf"))
+    savefig(joinpath(@__DIR__, "plots_and_tables", plot_out * "full.png"))
 
 
     infos = load_measurements_infos(ids, joinpath(ROOT_DIR, "cscs_measurements/")) 

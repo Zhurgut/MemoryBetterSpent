@@ -3,10 +3,10 @@
 /msc.code-workspace
 /nm_vs_loss_off1.svg
 *.svg
-*.png
+# *.png
 *.pdf
 *.tex
-*.jpg
+# *.jpg
 *.pt
 __pycache__/
 cifar-10-batches-py/
@@ -16,3 +16,4 @@ cifar-10-python.tar.gz
 *.lock
 *.arrow
 info.txt
+tiny_imagenet

@@ -268,9 +268,11 @@ class LowRankLight(Projectable):
         self.in_dim = in_dim
         self.rank = rank
 
+        self.regularization = 5e-5
+
         self.project(nn.Linear(in_dim, out_dim))
 
-        self.regularization = 5e-5
+        
 
 
     def forward(self, x):

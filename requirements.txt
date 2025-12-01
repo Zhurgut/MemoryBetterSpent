@@ -1,0 +1,7 @@
+datasets==4.4.1
+numpy==2.3.5
+tokenizers==0.22.1
+torch==2.8.0
+torcheval==0.0.7
+torchvision==0.23.0
+transformers==4.57.3
